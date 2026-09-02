@@ -4,6 +4,10 @@ A bilingual local-first job-search CRM with pipeline tracking, follow-ups and a 
 
 **Live demo:** https://job-search-crm-psi.vercel.app/
 
+## Preview
+
+![Job Search CRM — Russian interface with local vacancy matcher](assets/job-search-crm-preview.webp)
+
 ## Portfolio snapshot
 
 **Role:** Product concept · UX/UI · data model · front-end · matching logic · deployment  

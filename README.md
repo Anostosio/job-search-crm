@@ -2,6 +2,8 @@
 
 A bilingual job-search CRM for tracking vacancies, application stages, match scores, follow-ups and notes.
 
+**Live demo:** https://job-search-crm-psi.vercel.app/
+
 This is the second project in my AI-assisted product building / vibe-coding portfolio.
 
 ## What it does
@@ -36,7 +38,7 @@ The product is intentionally local-first: no account is required and no personal
 - JSON import and validation flow
 - Responsive layout
 - Git / GitHub
-- Vercel-ready static deployment
+- Vercel static deployment
 
 ## Product architecture
 
@@ -78,7 +80,9 @@ The first launch contains three fictional example vacancies so the dashboard is 
 
 ## Current status
 
-**MVP v0.1 — working local-first CRM**
+**MVP v0.2 — deployed portfolio prototype**
+
+Live at: https://job-search-crm-psi.vercel.app/
 
 Next improvements:
 

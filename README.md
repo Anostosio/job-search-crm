@@ -1,6 +1,6 @@
 # Job Search CRM
 
-A bilingual job-search CRM for tracking vacancies, application stages, match scores, follow-ups and notes.
+A bilingual job-search CRM with local vacancy matching, application stages, follow-ups and decision support.
 
 **Live demo:** https://job-search-crm-psi.vercel.app/
 
@@ -13,20 +13,40 @@ This is the second project in my AI-assisted product building / vibe-coding port
 - Assign match score and priority
 - Store salary, source, vacancy URL and notes
 - Set follow-up dates
-- Search and filter the pipeline
-- Sort by match, recency or follow-up
+- Search, filter and sort the pipeline
 - Show live pipeline statistics
-- Surface simple priority recommendations
-- Persist data locally in the browser with `localStorage`
-- Export the full CRM as JSON
-- Import JSON backups
+- Surface priority recommendations
+- Paste a vacancy description and run a local fit analysis
+- Highlight matched skills and potential gaps
+- Generate a suggested match score and recommendation
+- Save the analysis result directly into the CRM
+- Persist all CRM data locally with `localStorage`
+- Export and import JSON backups
 - Switch between English and Russian UI
 
-## Why I built it
+## Local vacancy matcher
 
-Job searching becomes difficult to manage once vacancies are spread across job boards, chats, emails and notes. This project turns that process into a lightweight personal CRM with a clear pipeline and a small decision-support layer.
+The v0.3 matcher is deliberately rule-based and runs entirely in the browser.
 
-The product is intentionally local-first: no account is required and no personal job-search data leaves the browser.
+It checks vacancy text for signals relevant to a junior AI-builder / design-led product profile, including Figma and product design, AI coding tools, JavaScript, GitHub, deployment, API / JSON work, visual communication, product thinking, junior-friendly language and remote work.
+
+It also detects several risk signals such as advanced backend requirements, strong production React / TypeScript expectations, multiple years of commercial development, office-only constraints and mandatory specialist degrees.
+
+The matcher then produces:
+
+- a 20–96% suggested match score
+- a fit verdict
+- detected strengths
+- detected gaps / risks
+- an application recommendation
+
+The result is decision support, not a claim that a model has evaluated the candidate. The rules are visible in `app.js` and can be changed or extended.
+
+## Why local-first
+
+For this MVP, vacancy descriptions and personal job-search data do not need to leave the browser. The app therefore works without an account, database, API key or paid AI service.
+
+This also creates a clear product progression: first make the analysis logic transparent and testable, then optionally replace or augment it with an AI-assisted server-side evaluator later.
 
 ## Stack
 
@@ -34,25 +54,28 @@ The product is intentionally local-first: no account is required and no personal
 - CSS3
 - Vanilla JavaScript
 - Local Storage API
+- rule-based text matching
 - File / Blob API for JSON export
 - JSON import and validation flow
-- Responsive layout
+- responsive layout
 - Git / GitHub
 - Vercel static deployment
 
 ## Product architecture
 
 ```text
-Vacancy input
-    ↓
-Local data model
-    ↓
+Vacancy description
+      ↓
+Local keyword / risk rules
+      ↓
+Match score + strengths + gaps
+      ↓
+Optional save to CRM
+      ↓
 localStorage persistence
-    ↓
-Filters / sorting / search
-    ↓
-Pipeline dashboard + recommendations
-    ↓
+      ↓
+Filters / sorting / dashboard
+      ↓
 JSON backup / restore
 ```
 
@@ -62,35 +85,35 @@ JSON backup / restore
 
 The MVP stores records in the browser. This keeps the app immediately usable without authentication, a database or a backend.
 
-### Portable data
+### Transparent matching
 
-Users can export their pipeline as JSON and restore it later. This avoids locking the data into one browser session.
+Instead of pretending that a deterministic score is AI, the current version clearly labels the feature as a local rule-based matcher. The scoring logic can be inspected, tested and adjusted.
 
 ### Decision support, not just storage
 
-The dashboard calculates active pipeline size, average match score, overdue follow-ups and the strongest current opportunity. It also surfaces simple next-action recommendations.
+The dashboard calculates active pipeline size, average match score, overdue follow-ups and the strongest current opportunity. The matcher adds another layer by turning raw vacancy text into an actionable fit summary.
 
 ### Bilingual UX
 
-The interface can switch between English and Russian without duplicating the app into separate codebases.
+The interface and matcher outputs switch between English and Russian without maintaining two separate applications.
 
 ## Demo data
 
-The first launch contains three fictional example vacancies so the dashboard is understandable immediately. They can be edited or deleted.
+The first launch contains three fictional example vacancies so the dashboard is understandable immediately. The matcher also includes a fictional junior AI Product Builder description for one-click testing.
 
 ## Current status
 
-**MVP v0.2 — deployed portfolio prototype**
+**MVP v0.3 — deployed local vacancy matcher**
 
 Live at: https://job-search-crm-psi.vercel.app/
 
 Next improvements:
 
-- optional AI vacancy analysis
-- automatic match summary from pasted vacancy text
+- editable matcher profile / skill weights
 - CSV export
 - kanban pipeline view
 - richer analytics
+- optional AI-assisted comparison behind a server-side endpoint
 - cloud sync / Supabase version
 - reminders and browser notifications
 

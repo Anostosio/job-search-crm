@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="A bilingual job-search CRM and vacancy matcher built as an AI-builder portfolio project." />
+  <meta name="description" content="A bilingual job-search CRM with local vacancy matching and decision support." />
   <title>Job Search CRM — Anostosio°</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -28,9 +28,35 @@
       <div>
         <p class="eyebrow" data-i18n="eyebrow">Job search, without spreadsheet chaos</p>
         <h1 data-i18n="title">Track vacancies. See priorities. Move faster.</h1>
-        <p class="lead" data-i18n="lead">A lightweight CRM for applications, match scores, follow-ups and notes. Data stays in your browser and can be exported anytime.</p>
+        <p class="lead" data-i18n="lead">A lightweight CRM with a local vacancy matcher, follow-ups and notes. Data stays in your browser and can be exported anytime.</p>
       </div>
       <button id="addBtn" class="primary"><span data-i18n="addVacancy">Add vacancy</span><span>＋</span></button>
+    </section>
+
+    <section class="matcher-card">
+      <div class="matcher-copy">
+        <p class="kicker" data-i18n="matcherKicker">Local vacancy matcher</p>
+        <h2 data-i18n="matcherTitle">Paste a vacancy. Get a fast fit check.</h2>
+        <p data-i18n="matcherLead">The browser checks the description against a junior AI-builder profile and highlights strengths, gaps and a suggested match score. No vacancy text leaves your device.</p>
+      </div>
+      <div class="matcher-grid">
+        <div class="matcher-input">
+          <textarea id="vacancyText" rows="10" data-i18n-placeholder="vacancyPlaceholder" placeholder="Paste the full vacancy description here..."></textarea>
+          <div class="matcher-actions">
+            <button id="exampleVacancyBtn" class="ghost" data-i18n="matcherExample">Use example</button>
+            <button id="analyzeBtn" class="primary" data-i18n="analyze">Analyze vacancy</button>
+          </div>
+        </div>
+        <div id="analysisEmpty" class="analysis-empty" data-i18n="analysisEmpty">Your match score and recommendation will appear here.</div>
+        <div id="analysisResult" class="analysis-result" hidden>
+          <div class="analysis-score"><span data-i18n="match">Match</span><strong id="analysisScore">0%</strong><em id="analysisVerdict"></em></div>
+          <div class="analysis-block"><h3 data-i18n="strengths">Strong signals</h3><ul id="strengthsList"></ul></div>
+          <div class="analysis-block"><h3 data-i18n="gaps">Gaps / risks</h3><ul id="gapsList"></ul></div>
+          <div class="analysis-block"><h3 data-i18n="recommendation">Recommendation</h3><p id="analysisSummary"></p></div>
+          <button id="saveAnalysisBtn" class="ghost wide" data-i18n="saveToCrm">Add result to CRM</button>
+        </div>
+      </div>
+      <p class="privacy-note" data-i18n="matcherNote">Rule-based local analysis · no API key · no server request</p>
     </section>
 
     <section class="stats" id="stats"></section>
@@ -44,10 +70,7 @@
 
     <section class="layout">
       <div class="table-card">
-        <div class="table-head">
-          <h2 data-i18n="pipeline">Application pipeline</h2>
-          <span id="resultCount"></span>
-        </div>
+        <div class="table-head"><h2 data-i18n="pipeline">Application pipeline</h2><span id="resultCount"></span></div>
         <div class="table-wrap">
           <table>
             <thead><tr><th data-i18n="role">Role</th><th data-i18n="status">Status</th><th data-i18n="match">Match</th><th data-i18n="priority">Priority</th><th data-i18n="salary">Salary</th><th data-i18n="followup">Follow-up</th><th></th></tr></thead>
@@ -56,35 +79,17 @@
         </div>
         <div id="emptyState" class="empty" hidden></div>
       </div>
-
-      <aside class="insights-card">
-        <p class="kicker" data-i18n="focus">Focus</p>
-        <h2 data-i18n="nextBest">Next best actions</h2>
-        <div id="insights"></div>
-      </aside>
+      <aside class="insights-card"><p class="kicker" data-i18n="focus">Focus</p><h2 data-i18n="nextBest">Next best actions</h2><div id="insights"></div></aside>
     </section>
   </main>
 
   <dialog id="jobDialog">
     <form id="jobForm" method="dialog" class="modal">
       <div class="modal-head"><div><p class="kicker" data-i18n="record">Vacancy record</p><h2 id="modalTitle"></h2></div><button type="button" id="closeDialog" class="icon-btn">×</button></div>
-      <input type="hidden" id="jobId" />
-      <div class="grid2">
-        <label><span data-i18n="company">Company</span><input id="company" required /></label>
-        <label><span data-i18n="role">Role</span><input id="role" required /></label>
-      </div>
-      <div class="grid2">
-        <label><span data-i18n="status">Status</span><select id="status"></select></label>
-        <label><span data-i18n="priority">Priority</span><select id="priority"></select></label>
-      </div>
-      <div class="grid2">
-        <label><span data-i18n="matchScore">Match score</span><input id="match" type="number" min="0" max="100" value="70" /></label>
-        <label><span data-i18n="salary">Salary</span><input id="salary" placeholder="e.g. €1,500 / 80k ₽" /></label>
-      </div>
-      <div class="grid2">
-        <label><span data-i18n="source">Source</span><input id="source" placeholder="LinkedIn, HH, Geekjob..." /></label>
-        <label><span data-i18n="followupDate">Follow-up date</span><input id="followup" type="date" /></label>
-      </div>
+      <div class="grid2"><label><span data-i18n="company">Company</span><input id="company" required /></label><label><span data-i18n="role">Role</span><input id="role" required /></label></div>
+      <div class="grid2"><label><span data-i18n="status">Status</span><select id="status"></select></label><label><span data-i18n="priority">Priority</span><select id="priority"></select></label></div>
+      <div class="grid2"><label><span data-i18n="matchScore">Match score</span><input id="match" type="number" min="0" max="100" value="70" /></label><label><span data-i18n="salary">Salary</span><input id="salary" placeholder="e.g. €1,500 / 80k ₽" /></label></div>
+      <div class="grid2"><label><span data-i18n="source">Source</span><input id="source" placeholder="LinkedIn, HH, Geekjob..." /></label><label><span data-i18n="followupDate">Follow-up date</span><input id="followup" type="date" /></label></div>
       <label><span data-i18n="url">Vacancy URL</span><input id="url" type="url" placeholder="https://..." /></label>
       <label><span data-i18n="notes">Notes / match summary</span><textarea id="notes" rows="4"></textarea></label>
       <div class="modal-actions"><button type="button" id="deleteBtn" class="danger" data-i18n="delete">Delete</button><div><button type="button" id="cancelBtn" class="ghost" data-i18n="cancel">Cancel</button><button type="submit" class="primary" data-i18n="save">Save vacancy</button></div></div>

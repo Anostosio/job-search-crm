@@ -1,0 +1,12 @@
+{
+  "name": "job-search-crm",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "test:coverage": "node --test --experimental-test-coverage",
+    "check": "node --check app.js && node --check lib/date.js && node --check lib/jobs.js && node --check lib/profiles.js && node --check lib/matcher.js && node --check lib/analytics.js && node --check lib/storage.js && node --check lib/import-export.js && node --check lib/i18n.js"
+  },
+  "engines": { "node": ">=20" }
+}

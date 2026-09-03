@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
-  <title id="title">C° — Job Search CRM</title>
+  <title id="title">J° — Job Search CRM</title>
   <rect width="64" height="64" rx="15" fill="#831c18"/>
-  <path fill="#fffdf9" d="M45 21c-4-6-10-9-18-9C14 12 6 21 6 34s8 22 21 22c8 0 14-3 18-9l-8-6c-3 4-6 5-10 5-6 0-10-5-10-12s4-12 10-12c4 0 7 2 10 6l8-7Z"/>
+  <path fill="#fffdf9" d="M17 13h28v28c0 10-6 16-16 16-7 0-13-3-17-9l8-6c2 4 5 6 9 6 5 0 7-3 7-8V22H17v-9Z"/>
   <circle cx="51" cy="13" r="6" fill="#fffdf9"/>
   <circle cx="51" cy="13" r="2.5" fill="#831c18"/>
 </svg>

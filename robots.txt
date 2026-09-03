@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://job-search-crm-psi.vercel.app/sitemap.xml

@@ -29,7 +29,6 @@
   <header class="app-header">
     <div class="brand-lockup">
       <a class="brand" href="#today">Anostosio° / Product Lab</a>
-      <div class="project-meta"><span data-i18n="project">Project 02 · Job Search CRM</span><span class="version" data-i18n="version">v1.0</span></div>
     </div>
     <div class="header-actions">
       <button id="langToggle" class="text-button lang-button" type="button" aria-label="Language">RU</button>
@@ -147,7 +146,7 @@
           <div class="field-grid"><label><span data-i18n="company">Company</span><input id="company" required maxlength="160" /></label><label><span data-i18n="role">Role</span><input id="role" required maxlength="200" /></label></div>
           <div class="field-grid"><label><span data-i18n="direction">Direction</span><select id="direction"></select></label><label><span data-i18n="source">Source</span><input id="source" maxlength="120" /></label></div>
           <div class="field-grid"><label><span data-i18n="location">Location</span><input id="location" maxlength="180" /></label><label><span data-i18n="workMode">Work mode</span><select id="workMode"></select></label></div>
-          <label><span>URL</span><input id="url" type="url" inputmode="url" placeholder="https://..." /></label>
+          <label><span>URL</span><input id="url" type="url" inputmode="url" autocomplete="url" placeholder="https://..." /></label>
           <label><span data-i18n="description">Description</span><textarea id="description" rows="8" maxlength="12000"></textarea></label>
         </section>
         <section data-detail-panel="application" hidden>
@@ -177,5 +176,6 @@
 
   <footer class="site-footer"><span data-i18n="footer">Product concept, UX/UI and front-end by Anostosio°</span><a href="https://anostosio.ru/" target="_blank" rel="noopener noreferrer" data-i18n="portfolio">Portfolio ↗</a></footer>
   <script type="module" src="app.js"></script>
+  <script type="module" src="autofill.js"></script>
 </body>
 </html>

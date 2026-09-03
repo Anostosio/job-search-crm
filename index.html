@@ -3,100 +3,179 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="A bilingual job-search CRM with local vacancy matching and decision support." />
-  <title>Job Search CRM — Anostosio°</title>
+  <meta name="description" content="A local-first job-search CRM for tracking opportunities, follow-ups, fit and pipeline performance." />
+  <meta name="theme-color" content="#f4f0eb" />
+  <meta property="og:title" content="Job Search CRM — Anostosio° / Product Lab" />
+  <meta property="og:description" content="Turn job search into a clear system of opportunities, actions and decisions." />
+  <meta property="og:image" content="https://job-search-crm-psi.vercel.app/assets/job-search-crm-preview.webp" />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://job-search-crm-psi.vercel.app/" />
+  <meta property="og:locale" content="en_US" />
+  <meta name="twitter:card" content="summary" />
+  <title>Job Search CRM — Anostosio° / Product Lab</title>
+  <link rel="canonical" href="https://job-search-crm-psi.vercel.app/" />
+  <link rel="alternate" hreflang="en" href="https://job-search-crm-psi.vercel.app/" />
+  <link rel="alternate" hreflang="ru" href="https://job-search-crm-psi.vercel.app/?lang=ru" />
+  <link rel="alternate" hreflang="x-default" href="https://job-search-crm-psi.vercel.app/" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="manifest" href="/site.webmanifest" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Unbounded:wght@500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <header class="topbar">
-    <div>
-      <a class="brand" href="#">Anostosio° / AI Lab</a>
-      <span class="tag">Project 02 · Job Search CRM</span>
+  <a class="skip-link" href="#workspace" data-i18n="skip">Skip to workspace</a>
+  <header class="app-header">
+    <div class="brand-lockup">
+      <a class="brand" href="#today">Anostosio° / Product Lab</a>
+      <div class="project-meta"><span data-i18n="project">Project 02 · Job Search CRM</span><span class="version" data-i18n="version">v1.0</span></div>
     </div>
-    <div class="top-actions">
-      <button id="langToggle" class="ghost">RU</button>
-      <button id="exportBtn" class="ghost" data-i18n="export">Export JSON</button>
-      <label class="ghost upload"><span data-i18n="import">Import JSON</span><input id="importInput" type="file" accept="application/json" /></label>
+    <div class="header-actions">
+      <button id="langToggle" class="text-button lang-button" type="button" aria-label="Language">RU</button>
+      <button id="headerAddBtn" class="primary-button compact" type="button"><span data-i18n="addVacancy">Add vacancy</span><span aria-hidden="true">＋</span></button>
     </div>
   </header>
 
-  <main>
-    <section class="hero">
-      <div>
-        <p class="eyebrow" data-i18n="eyebrow">Job search, without spreadsheet chaos</p>
-        <h1 data-i18n="title">Track vacancies. See priorities. Move faster.</h1>
-        <p class="lead" data-i18n="lead">A lightweight CRM with a local vacancy matcher, follow-ups and notes. Data stays in your browser and can be exported anytime.</p>
-      </div>
-      <button id="addBtn" class="primary"><span data-i18n="addVacancy">Add vacancy</span><span>＋</span></button>
-    </section>
+  <div class="app-shell">
+    <nav class="app-nav" aria-label="Primary navigation">
+      <button class="nav-item is-active" data-view-target="today" type="button" data-i18n="navToday">Today</button>
+      <button class="nav-item" data-view-target="pipeline" type="button" data-i18n="navPipeline">Pipeline</button>
+      <button class="nav-item" data-view-target="analyzer" type="button" data-i18n="navAnalyzer">Analyzer</button>
+      <button class="nav-item" data-view-target="analytics" type="button" data-i18n="navAnalytics">Analytics</button>
+      <button class="nav-item" data-view-target="settings" type="button" data-i18n="navSettings">Settings</button>
+    </nav>
 
-    <section class="matcher-card">
-      <div class="matcher-copy">
-        <p class="kicker" data-i18n="matcherKicker">Local vacancy matcher</p>
-        <h2 data-i18n="matcherTitle">Paste a vacancy. Get a fast fit check.</h2>
-        <p data-i18n="matcherLead">The browser checks the description against a junior AI-builder profile and highlights strengths, gaps and a suggested match score. No vacancy text leaves your device.</p>
-      </div>
-      <div class="matcher-grid">
-        <div class="matcher-input">
-          <textarea id="vacancyText" rows="10" data-i18n-placeholder="vacancyPlaceholder" placeholder="Paste the full vacancy description here..."></textarea>
-          <div class="matcher-actions">
-            <button id="exampleVacancyBtn" class="ghost" data-i18n="matcherExample">Use example</button>
-            <button id="analyzeBtn" class="primary" data-i18n="analyze">Analyze vacancy</button>
-          </div>
+    <main id="workspace" class="workspace" tabindex="-1">
+      <section id="view-today" class="view is-active" data-view="today" aria-labelledby="todayTitle">
+        <div class="view-heading">
+          <div><p class="kicker" data-i18n="navToday">Today</p><h1 id="todayTitle" data-i18n="todayTitle">What needs attention now</h1><p class="view-lead" data-i18n="todayLead"></p></div>
         </div>
-        <div id="analysisEmpty" class="analysis-empty" data-i18n="analysisEmpty">Your match score and recommendation will appear here.</div>
-        <div id="analysisResult" class="analysis-result" hidden>
-          <div class="analysis-score"><span data-i18n="match">Match</span><strong id="analysisScore">0%</strong><em id="analysisVerdict"></em></div>
-          <div class="analysis-block"><h3 data-i18n="strengths">Strong signals</h3><ul id="strengthsList"></ul></div>
-          <div class="analysis-block"><h3 data-i18n="gaps">Gaps / risks</h3><ul id="gapsList"></ul></div>
-          <div class="analysis-block"><h3 data-i18n="recommendation">Recommendation</h3><p id="analysisSummary"></p></div>
-          <button id="saveAnalysisBtn" class="ghost wide" data-i18n="saveToCrm">Add result to CRM</button>
+        <div id="todayStats" class="metric-grid"></div>
+        <div class="today-grid">
+          <section class="panel"><div class="panel-heading"><div><p class="kicker">Next Best Actions</p><h2 data-i18n="dueToday">Due today</h2></div></div><div id="todayActions" class="action-list"></div></section>
+          <section class="panel"><div class="panel-heading"><div><p class="kicker" data-i18n="strongest">Strongest opportunity</p><h2 id="strongestTitle">—</h2></div></div><div id="strongestOpportunity"></div></section>
         </div>
-      </div>
-      <p class="privacy-note" data-i18n="matcherNote">Rule-based local analysis · no API key · no server request</p>
-    </section>
+      </section>
 
-    <section class="stats" id="stats"></section>
-
-    <section class="toolbar">
-      <input id="searchInput" type="search" data-i18n-placeholder="search" placeholder="Search company, role or notes" />
-      <select id="statusFilter"></select>
-      <select id="priorityFilter"></select>
-      <select id="sortSelect"></select>
-    </section>
-
-    <section class="layout">
-      <div class="table-card">
-        <div class="table-head"><h2 data-i18n="pipeline">Application pipeline</h2><span id="resultCount"></span></div>
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th data-i18n="role">Role</th><th data-i18n="status">Status</th><th data-i18n="match">Match</th><th data-i18n="priority">Priority</th><th data-i18n="salary">Salary</th><th data-i18n="followup">Follow-up</th><th></th></tr></thead>
-            <tbody id="jobsBody"></tbody>
-          </table>
+      <section id="view-pipeline" class="view" data-view="pipeline" aria-labelledby="pipelineTitle" hidden>
+        <div class="view-heading split-heading">
+          <div><p class="kicker" data-i18n="navPipeline">Pipeline</p><h1 id="pipelineTitle" data-i18n="pipelineTitle">Application pipeline</h1><p class="view-lead" data-i18n="pipelineLead"></p></div>
+          <div class="segmented" aria-label="Pipeline view"><button type="button" class="is-active" data-pipeline-mode="board" data-i18n="board">Board</button><button type="button" data-pipeline-mode="table" data-i18n="table">Table</button></div>
         </div>
-        <div id="emptyState" class="empty" hidden></div>
-      </div>
-      <aside class="insights-card"><p class="kicker" data-i18n="focus">Focus</p><h2 data-i18n="nextBest">Next best actions</h2><div id="insights"></div></aside>
-    </section>
-  </main>
+        <div class="saved-views" id="savedViews"></div>
+        <section class="filters panel compact-panel" aria-label="Filters">
+          <input id="searchInput" type="search" data-i18n-placeholder="search" placeholder="Search" />
+          <select id="statusFilter"></select><select id="priorityFilter"></select><select id="directionFilter"></select><select id="workModeFilter"></select><select id="sourceFilter"></select>
+          <select id="matchFilter"><option value="">Match</option><option value="80">80%+</option><option value="65">65%+</option><option value="50">50%+</option></select>
+          <select id="followupFilter"><option value="" data-i18n="allFollowups">All follow-up states</option><option value="today" data-i18n="today">Today</option><option value="overdue" data-i18n="overdueLabel">Overdue</option><option value="scheduled" data-i18n="scheduled">Scheduled</option><option value="none" data-i18n="none">None</option></select>
+          <button id="resetFiltersBtn" class="text-button" type="button" data-i18n="resetFilters">Reset filters</button>
+        </section>
+        <div id="pipelineBoard" class="board"></div>
+        <div id="pipelineTable" class="panel table-panel" hidden><div class="table-wrap"><table><thead><tr><th data-i18n="role">Role</th><th data-i18n="status">Stage</th><th data-i18n="match">Match</th><th data-i18n="priority">Priority</th><th data-i18n="direction">Direction</th><th data-i18n="workMode">Work mode</th><th data-i18n="salary">Salary</th><th data-i18n="followUp">Follow-up</th><th></th></tr></thead><tbody id="jobsBody"></tbody></table></div></div>
+        <div id="pipelineEmpty" class="empty-state" hidden><h2 data-i18n="emptyPipeline">No opportunities here yet.</h2></div>
+      </section>
 
-  <dialog id="jobDialog">
-    <form id="jobForm" method="dialog" class="modal">
-      <div class="modal-head"><div><p class="kicker" data-i18n="record">Vacancy record</p><h2 id="modalTitle"></h2></div><button type="button" id="closeDialog" class="icon-btn">×</button></div>
-      <div class="grid2"><label><span data-i18n="company">Company</span><input id="company" required /></label><label><span data-i18n="role">Role</span><input id="role" required /></label></div>
-      <div class="grid2"><label><span data-i18n="status">Status</span><select id="status"></select></label><label><span data-i18n="priority">Priority</span><select id="priority"></select></label></div>
-      <div class="grid2"><label><span data-i18n="matchScore">Match score</span><input id="match" type="number" min="0" max="100" value="70" /></label><label><span data-i18n="salary">Salary</span><input id="salary" placeholder="e.g. €1,500 / 80k ₽" /></label></div>
-      <div class="grid2"><label><span data-i18n="source">Source</span><input id="source" placeholder="LinkedIn, HH, Geekjob..." /></label><label><span data-i18n="followupDate">Follow-up date</span><input id="followup" type="date" /></label></div>
-      <label><span data-i18n="url">Vacancy URL</span><input id="url" type="url" placeholder="https://..." /></label>
-      <label><span data-i18n="notes">Notes / match summary</span><textarea id="notes" rows="4"></textarea></label>
-      <div class="modal-actions"><button type="button" id="deleteBtn" class="danger" data-i18n="delete">Delete</button><div><button type="button" id="cancelBtn" class="ghost" data-i18n="cancel">Cancel</button><button type="submit" class="primary" data-i18n="save">Save vacancy</button></div></div>
+      <section id="view-analyzer" class="view" data-view="analyzer" aria-labelledby="analyzerTitle" hidden>
+        <div class="view-heading"><div><p class="kicker" data-i18n="navAnalyzer">Analyzer</p><h1 id="analyzerTitle" data-i18n="analyzerTitle">Vacancy analysis</h1><p class="view-lead" data-i18n="analyzerLead"></p></div></div>
+        <div class="analyzer-layout">
+          <section class="panel analyzer-input-panel">
+            <label><span data-i18n="profile">Candidate profile</span><select id="analyzerProfile"></select></label>
+            <label><span data-i18n="pasteVacancy">Paste vacancy description</span><textarea id="vacancyText" rows="18" maxlength="12000" placeholder="Paste the vacancy text here..."></textarea></label>
+            <button id="analyzeBtn" class="primary-button" type="button"><span data-i18n="analyze">Analyze vacancy</span><span aria-hidden="true">↗</span></button>
+            <p class="privacy-note" data-i18n="privacy"></p>
+          </section>
+          <section class="panel analyzer-result-panel" id="analysisPanel" aria-live="polite">
+            <div id="analysisEmpty" class="empty-state analyzer-empty"><h2 data-i18n="analyzerTitle">Vacancy analysis</h2><p data-i18n="analyzerLead"></p></div>
+            <div id="analysisResult" hidden></div>
+          </section>
+        </div>
+      </section>
+
+      <section id="view-analytics" class="view" data-view="analytics" aria-labelledby="analyticsTitle" hidden>
+        <div class="view-heading"><div><p class="kicker" data-i18n="navAnalytics">Analytics</p><h1 id="analyticsTitle" data-i18n="analyticsTitle">Search performance</h1><p class="view-lead" data-i18n="analyticsLead"></p></div></div>
+        <div id="analyticsMetrics" class="metric-grid"></div>
+        <div class="analytics-grid">
+          <section class="panel"><div class="panel-heading"><div><p class="kicker" data-i18n="pipelineConversion">Pipeline conversion</p><h2 data-i18n="pipelineConversion">Pipeline conversion</h2></div></div><div id="conversionChart" class="conversion-list"></div></section>
+          <section class="panel"><div class="panel-heading"><div><p class="kicker" data-i18n="weeklyActivity">Weekly application activity</p><h2 data-i18n="weeklyActivity">Weekly application activity</h2></div></div><div id="weeklyChart" class="bar-chart" role="img"></div></section>
+          <section class="panel source-panel"><div class="panel-heading"><div><p class="kicker" data-i18n="sourcePerformance">Source performance</p><h2 data-i18n="sourcePerformance">Source performance</h2></div></div><div id="sourceTable"></div></section>
+        </div>
+      </section>
+
+      <section id="view-settings" class="view" data-view="settings" aria-labelledby="settingsTitle" hidden>
+        <div class="view-heading"><div><p class="kicker" data-i18n="navSettings">Settings</p><h1 id="settingsTitle" data-i18n="settingsTitle">Workspace settings</h1><p class="view-lead" data-i18n="settingsLead"></p></div></div>
+        <div class="settings-grid">
+          <section class="panel">
+            <div class="panel-heading"><div><p class="kicker" data-i18n="profiles">Candidate Profiles</p><h2 data-i18n="profiles">Candidate Profiles</h2></div><button id="newProfileBtn" class="text-button" type="button" data-i18n="newProfile">New profile</button></div>
+            <div id="profileTabs" class="profile-tabs"></div>
+            <form id="profileForm" class="profile-form">
+              <input id="profileId" type="hidden" />
+              <label><span data-i18n="profileName">Profile name</span><input id="profileName" maxlength="80" required /></label>
+              <div class="field-grid"><label><span data-i18n="targetRoles">Target roles</span><textarea id="targetRoles" rows="3"></textarea></label><label><span data-i18n="strongSkills">Strong skills</span><textarea id="strongSkills" rows="3"></textarea></label></div>
+              <div class="field-grid"><label><span data-i18n="developingSkills">Developing skills</span><textarea id="developingSkills" rows="3"></textarea></label><label><span data-i18n="excludedTasks">Excluded tasks</span><textarea id="excludedTasks" rows="3"></textarea></label></div>
+              <div class="field-grid"><label><span data-i18n="preferredMode">Preferred work mode</span><textarea id="preferredWorkMode" rows="2"></textarea></label><label><span data-i18n="allowedGeography">Allowed geography</span><textarea id="allowedGeography" rows="2"></textarea></label></div>
+              <div class="field-grid"><label><span data-i18n="salaryMinimum">Salary minimum</span><input id="salaryMinimum" type="number" min="0" /></label><label><span data-i18n="acceptableSeniority">Acceptable seniority</span><textarea id="acceptableSeniority" rows="2"></textarea></label></div>
+              <label><span data-i18n="hardConstraints">Hard constraints</span><textarea id="hardConstraints" rows="3"></textarea></label>
+              <button class="primary-button" type="submit"><span data-i18n="saveProfile">Save profile</span><span aria-hidden="true">↗</span></button>
+            </form>
+          </section>
+          <section class="panel data-panel">
+            <div class="panel-heading"><div><p class="kicker" data-i18n="dataSafety">Data & backups</p><h2 data-i18n="dataSafety">Data & backups</h2></div></div>
+            <p class="privacy-note" data-i18n="privacy"></p>
+            <div class="stack-actions"><button id="exportJsonBtn" class="secondary-button" type="button" data-i18n="exportJson">Export JSON</button><button id="exportCsvBtn" class="secondary-button" type="button" data-i18n="exportCsv">Export CSV</button><button id="importBtn" class="secondary-button" type="button" data-i18n="importBackup">Import backup</button></div>
+            <input id="importInput" type="file" accept="application/json,.json" hidden />
+            <div class="danger-zone"><p class="kicker">Danger zone</p><button id="clearWorkspaceBtn" class="danger-button" type="button" data-i18n="clearWorkspace">Clear workspace</button></div>
+          </section>
+        </div>
+      </section>
+
+      <section id="onboarding" class="onboarding panel" hidden aria-labelledby="onboardingTitle">
+        <p class="kicker">Anostosio° / Product Lab</p>
+        <h1 id="onboardingTitle" data-i18n="onboardingTitle">Build a clear job-search system.</h1>
+        <p data-i18n="onboardingLead"></p>
+        <div class="onboarding-actions"><button id="startEmptyBtn" class="primary-button" type="button"><span data-i18n="startEmpty">Start empty</span><span>↗</span></button><button id="loadDemoBtn" class="secondary-button" type="button" data-i18n="loadDemo">Load demo workspace</button><button id="onboardingImportBtn" class="secondary-button" type="button" data-i18n="importBackupAction">Import backup</button></div>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="jobDialog" class="detail-dialog">
+    <form id="jobForm" class="detail-surface" novalidate>
+      <div class="detail-header"><div><p class="kicker">Vacancy detail</p><h2 id="jobDialogTitle">New vacancy</h2></div><button id="closeJobDialog" class="icon-button" type="button" aria-label="Close">×</button></div>
+      <div class="detail-tabs" role="tablist" aria-label="Vacancy sections"><button type="button" class="is-active" data-detail-tab="overview" data-i18n="overview">Overview</button><button type="button" data-detail-tab="application" data-i18n="application">Application</button><button type="button" data-detail-tab="match" data-i18n="matchTab">Match</button><button type="button" data-detail-tab="contact" data-i18n="contact">Contact</button><button type="button" data-detail-tab="notes" data-i18n="notes">Notes</button><button type="button" data-detail-tab="activity" data-i18n="activity">Activity</button></div>
+      <div class="detail-body">
+        <section data-detail-panel="overview">
+          <div class="field-grid"><label><span data-i18n="company">Company</span><input id="company" required maxlength="160" /></label><label><span data-i18n="role">Role</span><input id="role" required maxlength="200" /></label></div>
+          <div class="field-grid"><label><span data-i18n="direction">Direction</span><select id="direction"></select></label><label><span data-i18n="source">Source</span><input id="source" maxlength="120" /></label></div>
+          <div class="field-grid"><label><span data-i18n="location">Location</span><input id="location" maxlength="180" /></label><label><span data-i18n="workMode">Work mode</span><select id="workMode"></select></label></div>
+          <label><span>URL</span><input id="url" type="url" inputmode="url" placeholder="https://..." /></label>
+          <label><span data-i18n="description">Description</span><textarea id="description" rows="8" maxlength="12000"></textarea></label>
+        </section>
+        <section data-detail-panel="application" hidden>
+          <div class="field-grid"><label><span data-i18n="status">Stage</span><select id="status"></select></label><label><span data-i18n="priority">Priority</span><select id="priority"></select></label></div>
+          <div class="field-grid"><label><span data-i18n="salary">Salary</span><input id="salary" maxlength="180" /></label><label><span data-i18n="appliedDate">Applied date</span><input id="appliedAt" type="date" /></label></div>
+          <div class="field-grid"><label><span data-i18n="followUp">Follow-up</span><input id="followUpAt" type="date" /></label><label><span data-i18n="nextAction">Next action</span><input id="nextAction" maxlength="300" /></label></div>
+          <label><span data-i18n="rejectionReason">Rejection reason</span><textarea id="rejectionReason" rows="3" maxlength="1000"></textarea></label>
+        </section>
+        <section data-detail-panel="match" hidden>
+          <div class="field-grid"><label><span data-i18n="profile">Candidate profile</span><select id="jobProfile"></select></label><label><span data-i18n="match">Match</span><input id="matchScore" type="number" min="0" max="100" /></label></div>
+          <label><span data-i18n="strengths">Strengths</span><textarea id="strengths" rows="5"></textarea></label><label><span data-i18n="gapsLabel">Gaps</span><textarea id="gaps" rows="5"></textarea></label>
+        </section>
+        <section data-detail-panel="contact" hidden><div class="field-grid"><label><span data-i18n="contactName">Contact name</span><input id="contactName" maxlength="160" /></label><label><span data-i18n="contactChannel">Contact channel</span><input id="contactChannel" maxlength="160" placeholder="Telegram / email / LinkedIn" /></label></div></section>
+        <section data-detail-panel="notes" hidden><label><span data-i18n="notes">Notes</span><textarea id="notes" rows="14" maxlength="8000"></textarea></label></section>
+        <section data-detail-panel="activity" hidden><div id="activityList" class="activity-list"></div></section>
+      </div>
+      <div class="detail-footer"><button id="deleteJobBtn" class="text-button danger-text" type="button" data-i18n="deleteVacancy">Delete vacancy</button><div><a id="openJobLink" class="text-button" href="#" target="_blank" rel="noopener noreferrer" hidden data-i18n="openVacancy">Open vacancy</a><button id="saveJobBtn" class="primary-button compact" type="submit"><span data-i18n="saveVacancy">Save vacancy</span><span>↗</span></button></div></div>
     </form>
   </dialog>
 
-  <footer><span>Built by Anostosio° · AI-assisted product building</span><a href="https://anostosio.ru/" target="_blank" rel="noreferrer">anostosio.ru ↗</a></footer>
-  <script src="app.js"></script>
+  <dialog id="duplicateDialog" class="small-dialog"><div class="modal-card"><p class="kicker" data-i18n="duplicateTitle">Possible duplicate</p><h2 id="duplicateHeading" data-i18n="duplicateText">A similar vacancy already exists.</h2><p id="duplicateSummary"></p><div class="modal-actions"><button id="duplicateOpenBtn" class="secondary-button" type="button" data-i18n="openExisting">Open existing</button><button id="duplicateCreateBtn" class="primary-button compact" type="button"><span data-i18n="createAnyway">Create anyway</span><span>↗</span></button></div></div></dialog>
+  <dialog id="importDialog" class="small-dialog"><div class="modal-card"><p class="kicker" data-i18n="importTitle">Import backup</p><h2 data-i18n="importPreview">Import preview</h2><div id="importPreview" class="import-preview"></div><p class="privacy-note" data-i18n="backupBeforeReplace"></p><div class="modal-actions"><button id="cancelImportBtn" class="text-button" type="button" data-i18n="cancel">Cancel</button><button id="mergeImportBtn" class="secondary-button" type="button" data-i18n="merge">Merge</button><button id="replaceImportBtn" class="danger-button" type="button" data-i18n="replace">Replace</button></div></div></dialog>
+  <dialog id="confirmDialog" class="small-dialog"><div class="modal-card"><p class="kicker">Confirm</p><h2 id="confirmMessage"></h2><div class="modal-actions"><button id="confirmCancelBtn" class="secondary-button" type="button" data-i18n="cancel">Cancel</button><button id="confirmOkBtn" class="danger-button" type="button">Confirm</button></div></div></dialog>
+
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden><span id="toastMessage"></span><button id="toastUndoBtn" type="button" class="text-button" hidden data-i18n="undo">Undo</button></div>
+  <div id="liveRegion" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+
+  <footer class="site-footer"><span data-i18n="footer">Product concept, UX/UI and front-end by Anostosio°</span><a href="https://anostosio.ru/" target="_blank" rel="noopener noreferrer" data-i18n="portfolio">Portfolio ↗</a></footer>
+  <script type="module" src="app.js"></script>
 </body>
 </html>

@@ -1,75 +1,642 @@
-const STORAGE_KEY='anostosio-job-search-crm-v1';
-const LANG_KEY='anostosio-job-search-crm-lang';
-const statusKeys=['candidate','preparing','applied','test','interview','offer','rejected','closed'];
-const priorityKeys=['veryHigh','high','medium','low'];
+import { createTranslator } from './lib/i18n.js';
+import { loadWorkspace, saveWorkspace, LANG_KEY, emptyWorkspace } from './lib/storage.js';
+import { ACTIVE_STATUSES, ARCHIVE_STATUSES, ALL_STATUSES, PRIORITIES, WORK_MODES, DIRECTIONS, createJob, createDemoJobs, findDuplicate, patchJob, sanitizeUrl, uid } from './lib/jobs.js';
+import { localDateKey, isOverdue, isToday, formatLocalDate, addLocalDays } from './lib/date.js';
+import { defaultProfiles, normalizeProfile } from './lib/profiles.js';
+import { analyzeVacancy, extractVacancyIdentity } from './lib/matcher.js';
+import { pipelineStats, sourcePerformance, weeklyActivity } from './lib/analytics.js';
+import { buildBackup, jobsToCsv, mergeWorkspaces, parseImportText } from './lib/import-export.js';
 
-const i18n={
-  en:{eyebrow:'Job search, without spreadsheet chaos',title:'Track vacancies. See priorities. Move faster.',lead:'A lightweight CRM with a local vacancy matcher, follow-ups and notes. Data stays in your browser and can be exported anytime.',addVacancy:'Add vacancy',export:'Export JSON',import:'Import JSON',search:'Search company, role or notes',pipeline:'Application pipeline',role:'Role',status:'Status',match:'Match',priority:'Priority',salary:'Salary',followup:'Follow-up',focus:'Focus',nextBest:'Next best actions',record:'Vacancy record',company:'Company',matchScore:'Match score',source:'Source',followupDate:'Follow-up date',url:'Vacancy URL',notes:'Notes / match summary',delete:'Delete',cancel:'Cancel',save:'Save vacancy',newVacancy:'New vacancy',editVacancy:'Edit vacancy',allStatuses:'All statuses',allPriorities:'All priorities',sortMatch:'Sort: highest match',sortNewest:'Sort: newest',sortFollowup:'Sort: follow-up',candidate:'Candidate',preparing:'Preparing',applied:'Applied',test:'Test task',interview:'Interview',offer:'Offer',rejected:'Rejected',closed:'Closed',veryHigh:'Very high',high:'High',medium:'Medium',low:'Low',jobs:'vacancies',noResults:'No vacancies match these filters.',total:'Total',active:'Active',appliedStat:'Applied',avgMatch:'Avg. match',today:'Today',overdue:'Overdue',noDate:'No follow-up',edit:'Edit',topMatch:'Top match',topMatchText:'Prioritize {company} — {role} with a {match}% match score.',followups:'Follow-ups',followupsText:'{count} application(s) need follow-up today or are overdue.',pipelineGap:'Pipeline gap',pipelineGapText:'You have {count} active applications before interview. Keep quality high, but add fresh options.',goodPipeline:'Healthy pipeline',goodPipelineText:'You have {count} active opportunities in motion. Focus on follow-ups and interview preparation.',nothingYet:'Start your pipeline',nothingYetText:'Add a few vacancies to see priority recommendations here.',matcherKicker:'Local vacancy matcher',matcherTitle:'Paste a vacancy. Get a fast fit check.',matcherLead:'The browser checks the description against a junior AI-builder profile and highlights strengths, gaps and a suggested match score. No vacancy text leaves your device.',vacancyPlaceholder:'Paste the full vacancy description here...',matcherExample:'Use example',analyze:'Analyze vacancy',analysisEmpty:'Your match score and recommendation will appear here.',strengths:'Strong signals',gaps:'Gaps / risks',recommendation:'Recommendation',saveToCrm:'Add result to CRM',matcherNote:'Rule-based local analysis · no API key · no server request',verdictStrong:'Strong fit',verdictGood:'Good fit',verdictStretch:'Stretch role',verdictWeak:'Low fit',recStrong:'High-priority application. Tailor the message around the strongest matched skills and show one shipped project.',recGood:'Worth applying. Address the listed gaps briefly and lead with adjacent experience.',recStretch:'Apply selectively if the role is junior-friendly. Treat the missing skills as a learning plan, not as experience you already have.',recWeak:'Probably not a priority right now unless the role has unusually flexible requirements.',noStrength:'No strong profile signals detected yet.',noGap:'No major risk signals detected in this text.',savedAnalysis:'Local matcher result',exampleVacancy:'Junior AI Product Builder\nRemote\nWe are looking for a junior builder who can prototype product ideas with Figma, AI coding tools, JavaScript and APIs. You will work with designers and product managers, connect simple REST APIs, use GitHub, deploy experiments to Vercel and document decisions. Experience with React or TypeScript is a plus. We value curiosity, strong visual thinking and shipped personal projects. No computer science degree required.'},
-  ru:{eyebrow:'Поиск работы без хаоса в таблицах',title:'Вакансии, приоритеты и отклики — в одном месте.',lead:'Лёгкая CRM с локальным анализом вакансий, follow-up и заметками. Данные остаются в браузере и экспортируются в любой момент.',addVacancy:'Добавить вакансию',export:'Экспорт JSON',import:'Импорт JSON',search:'Поиск по компании, роли или заметкам',pipeline:'Воронка откликов',role:'Вакансия',status:'Статус',match:'Мэтч',priority:'Приоритет',salary:'Зарплата',followup:'Follow-up',focus:'Фокус',nextBest:'Следующие лучшие действия',record:'Карточка вакансии',company:'Компания',matchScore:'Оценка мэтча',source:'Источник',followupDate:'Дата follow-up',url:'Ссылка на вакансию',notes:'Заметки / почему подходит',delete:'Удалить',cancel:'Отмена',save:'Сохранить',newVacancy:'Новая вакансия',editVacancy:'Редактировать вакансию',allStatuses:'Все статусы',allPriorities:'Все приоритеты',sortMatch:'Сортировка: лучший мэтч',sortNewest:'Сортировка: новые',sortFollowup:'Сортировка: follow-up',candidate:'Кандидат',preparing:'Готовлюсь',applied:'Откликнулась',test:'Тестовое',interview:'Собеседование',offer:'Оффер',rejected:'Отказ',closed:'Закрыта',veryHigh:'Очень высокий',high:'Высокий',medium:'Средний',low:'Низкий',jobs:'вакансий',noResults:'По этим фильтрам вакансий нет.',total:'Всего',active:'Активные',appliedStat:'Отклики',avgMatch:'Средний мэтч',today:'Сегодня',overdue:'Просрочено',noDate:'Нет даты',edit:'Изменить',topMatch:'Лучший мэтч',topMatchText:'Сфокусируйся на {company} — {role}: мэтч {match}%.',followups:'Follow-up',followupsText:'{count} отклик(а) требуют follow-up сегодня или уже просрочены.',pipelineGap:'Нужно пополнить воронку',pipelineGapText:'Сейчас {count} активных вакансий до этапа собеседования. Добавь свежие варианты, сохраняя качество.',goodPipeline:'Воронка в хорошем состоянии',goodPipelineText:'Сейчас {count} активных возможностей. Основной фокус — follow-up и подготовка к интервью.',nothingYet:'Начни воронку',nothingYetText:'Добавь несколько вакансий, и здесь появятся рекомендации.',matcherKicker:'Локальный анализ вакансии',matcherTitle:'Вставь вакансию и быстро оцени мэтч.',matcherLead:'Браузер сравнивает описание с профилем junior AI builder и показывает сильные стороны, пробелы и примерную оценку. Текст вакансии никуда не отправляется.',vacancyPlaceholder:'Вставь сюда полное описание вакансии...',matcherExample:'Заполнить пример',analyze:'Анализировать',analysisEmpty:'Здесь появятся оценка мэтча и рекомендация.',strengths:'Сильные сигналы',gaps:'Пробелы / риски',recommendation:'Рекомендация',saveToCrm:'Добавить результат в CRM',matcherNote:'Rule-based анализ в браузере · без API-ключа · без отправки на сервер',verdictStrong:'Сильный мэтч',verdictGood:'Хороший мэтч',verdictStretch:'Вакансия на вырост',verdictWeak:'Слабый мэтч',recStrong:'Высокий приоритет. В отклике вынеси вперёд совпавшие навыки и покажи хотя бы один уже запущенный проект.',recGood:'Откликаться стоит. Коротко закрой пробелы и опирайся на смежный опыт.',recStretch:'Откликайся выборочно, если вакансия действительно junior-friendly. Недостающие навыки обозначай как план обучения, а не как имеющийся опыт.',recWeak:'Сейчас это, скорее всего, не приоритет — если только требования не окажутся заметно гибче описания.',noStrength:'Явных сильных совпадений пока не найдено.',noGap:'Критичных рисков в этом тексте не найдено.',savedAnalysis:'Результат локального мэтчера',exampleVacancy:'Junior AI Product Builder\nУдалённо\nИщем junior-специалиста, который умеет быстро собирать продуктовые прототипы в Figma с помощью AI coding tools, JavaScript и API. Нужно работать с дизайнерами и продуктовой командой, подключать простые REST API, использовать GitHub, деплоить эксперименты на Vercel и документировать решения. React или TypeScript будут плюсом. Важны визуальное мышление, любопытство и собственные запущенные проекты. Профильное техническое образование не обязательно.'}
-};
+const $ = id => document.getElementById(id);
+const qsa = selector => [...document.querySelectorAll(selector)];
+const ONBOARDING_KEY = 'anostosio-job-search-crm-onboarded';
+const initialLang = new URLSearchParams(location.search).get('lang') || localStorage.getItem(LANG_KEY) || 'en';
+const i18n = createTranslator(initialLang);
+const loaded = loadWorkspace();
+let workspace = loaded.workspace;
+let currentView = location.hash.replace('#', '') || 'today';
+let pipelineMode = 'board';
+let editingId = null;
+let analysis = null;
+let pendingDuplicate = null;
+let pendingImport = null;
+let pendingConfirm = null;
+let lastDeleted = null;
+let savedView = '';
+let lastFocused = null;
 
-let lang=localStorage.getItem(LANG_KEY)||'en';
-let jobs=loadJobs();
-let editingId=null;
-let lastAnalysis=null;
-const $=id=>document.getElementById(id);
-const els={body:$('jobsBody'),stats:$('stats'),insights:$('insights'),count:$('resultCount'),empty:$('emptyState'),dialog:$('jobDialog'),form:$('jobForm'),search:$('searchInput'),statusFilter:$('statusFilter'),priorityFilter:$('priorityFilter'),sort:$('sortSelect')};
+const filters = { search: '', status: '', priority: '', direction: '', workMode: '', source: '', match: '', followup: '' };
 
-function uid(){return crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2)}
-function seed(){const today=new Date();const plus=d=>{const x=new Date(today);x.setDate(x.getDate()+d);return x.toISOString().slice(0,10)};return[
-{id:uid(),company:'Northstar Labs',role:'Junior AI Automation Specialist',status:'preparing',priority:'veryHigh',match:88,salary:'€1,500–2,000',source:'Geekjob',followup:plus(2),url:'',notes:'Strong entry-level fit. AI tools + product thinking; strengthen API/JSON examples.',createdAt:Date.now()-3000},
-{id:uid(),company:'Studio Orbit',role:'AI Product Builder Intern',status:'applied',priority:'high',match:82,salary:'Remote · internship',source:'Young&Junior',followup:plus(0),url:'',notes:'Good bridge from design into AI-assisted product building.',createdAt:Date.now()-2000},
-{id:uid(),company:'Flowstack',role:'Junior Automation Builder',status:'candidate',priority:'medium',match:71,salary:'$900–1,300',source:'Career page',followup:'',url:'',notes:'Needs n8n/webhooks confidence. Worth keeping as a stretch role.',createdAt:Date.now()-1000}
-]}
-function loadJobs(){try{const raw=localStorage.getItem(STORAGE_KEY);return raw?JSON.parse(raw):seed()}catch{return seed()}}
-function save(){localStorage.setItem(STORAGE_KEY,JSON.stringify(jobs))}
-function t(key,vars={}){let s=i18n[lang][key]??key;Object.entries(vars).forEach(([k,v])=>s=s.replace(`{${k}}`,v));return s}
-function escapeHtml(v=''){return String(v).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
-function options(select,items,allLabel){select.innerHTML=(allLabel?`<option value="">${allLabel}</option>`:'')+items.map(k=>`<option value="${k}">${t(k)}</option>`).join('')}
-function applyLanguage(){document.documentElement.lang=lang;document.querySelectorAll('[data-i18n]').forEach(el=>el.textContent=t(el.dataset.i18n));document.querySelectorAll('[data-i18n-placeholder]').forEach(el=>el.placeholder=t(el.dataset.i18nPlaceholder));$('langToggle').textContent=lang==='en'?'RU':'EN';options(els.statusFilter,statusKeys,t('allStatuses'));options(els.priorityFilter,priorityKeys,t('allPriorities'));els.sort.innerHTML=`<option value="match">${t('sortMatch')}</option><option value="newest">${t('sortNewest')}</option><option value="followup">${t('sortFollowup')}</option>`;options($('status'),statusKeys);options($('priority'),priorityKeys);render();if(lastAnalysis)renderAnalysis(lastAnalysis)}
-function activeJobs(){return jobs.filter(j=>!['rejected','closed'].includes(j.status))}
-function renderStats(){const active=activeJobs();const applied=jobs.filter(j=>['applied','test','interview','offer'].includes(j.status)).length;const avg=jobs.length?Math.round(jobs.reduce((a,j)=>a+(Number(j.match)||0),0)/jobs.length):0;els.stats.innerHTML=[['total',jobs.length],['active',active.length],['appliedStat',applied],['avgMatch',`${avg}%`]].map(([k,v])=>`<div class="stat"><span>${t(k)}</span><strong>${v}</strong></div>`).join('')}
-function filtered(){const q=els.search.value.trim().toLowerCase();let list=jobs.filter(j=>(!q||[j.company,j.role,j.notes,j.source].join(' ').toLowerCase().includes(q))&&(!els.statusFilter.value||j.status===els.statusFilter.value)&&(!els.priorityFilter.value||j.priority===els.priorityFilter.value));if(els.sort.value==='newest')list.sort((a,b)=>b.createdAt-a.createdAt);else if(els.sort.value==='followup')list.sort((a,b)=>(a.followup||'9999-99-99').localeCompare(b.followup||'9999-99-99'));else list.sort((a,b)=>(b.match||0)-(a.match||0));return list}
-function followupLabel(date){if(!date)return t('noDate');const today=new Date().toISOString().slice(0,10);if(date===today)return t('today');if(date<today)return t('overdue');return new Date(date+'T00:00:00').toLocaleDateString(lang==='ru'?'ru-RU':'en-GB',{day:'2-digit',month:'short'})}
-function renderTable(){const list=filtered();els.count.textContent=`${list.length} ${t('jobs')}`;els.body.innerHTML=list.map(j=>`<tr><td class="role-cell"><strong>${escapeHtml(j.role)}</strong><span>${escapeHtml(j.company)}${j.source?' · '+escapeHtml(j.source):''}</span></td><td><span class="badge">${t(j.status)}</span></td><td><span class="score">${Number(j.match)||0}%</span></td><td><span class="badge ${j.priority==='veryHigh'||j.priority==='high'?'high':j.priority}">${t(j.priority)}</span></td><td>${escapeHtml(j.salary||'—')}</td><td>${followupLabel(j.followup)}</td><td class="row-actions">${j.url?`<a href="${escapeHtml(j.url)}" target="_blank" rel="noreferrer">↗</a>`:''}<button data-edit="${j.id}" aria-label="${t('edit')}">•••</button></td></tr>`).join('');els.empty.hidden=list.length!==0;els.empty.textContent=t('noResults');els.body.querySelectorAll('[data-edit]').forEach(btn=>btn.addEventListener('click',()=>openDialog(btn.dataset.edit)))}
-function renderInsights(){const active=activeJobs();if(!jobs.length){els.insights.innerHTML=`<div class="insight"><strong>${t('nothingYet')}</strong><p>${t('nothingYetText')}</p></div>`;return}const top=[...active].sort((a,b)=>b.match-a.match)[0];const today=new Date().toISOString().slice(0,10);const due=active.filter(j=>j.followup&&j.followup<=today).length;const preInterview=active.filter(j=>['candidate','preparing','applied','test'].includes(j.status)).length;const parts=[];if(top)parts.push(`<div class="insight"><strong>${t('topMatch')}</strong><p>${t('topMatchText',{company:escapeHtml(top.company),role:escapeHtml(top.role),match:top.match})}</p></div>`);parts.push(`<div class="insight"><strong>${t('followups')}</strong><p>${t('followupsText',{count:due})}</p></div>`);parts.push(`<div class="insight"><strong>${t(preInterview<5?'pipelineGap':'goodPipeline')}</strong><p>${t(preInterview<5?'pipelineGapText':'goodPipelineText',{count:preInterview})}</p></div>`);els.insights.innerHTML=parts.join('')}
-function render(){renderStats();renderTable();renderInsights()}
+function t(key, vars) { return i18n.t(key, vars); }
+function escapeHtml(value = '') { return String(value).replace(/[&<>'"]/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' }[char])); }
+function listFromText(value = '') { return String(value).split(/[\n,;]/).map(item => item.trim()).filter(Boolean); }
+function textFromList(value = []) { return Array.isArray(value) ? value.join('\n') : ''; }
+function activeJobs() { return workspace.jobs.filter(job => ACTIVE_STATUSES.includes(job.status)); }
+function getJob(id) { return workspace.jobs.find(job => job.id === id); }
+function getProfile(id) { return workspace.profiles.find(profile => profile.id === id) || workspace.profiles[0]; }
+function persist(message = '') { workspace = saveWorkspace(workspace); if (message) announce(message); }
+function announce(message) { $('liveRegion').textContent = message; }
 
-function openDialog(id=null,preset=null){editingId=id;const job=id?jobs.find(j=>j.id===id):preset;$('modalTitle').textContent=t(id?'editVacancy':'newVacancy');$('deleteBtn').style.visibility=id?'visible':'hidden';const defaults={company:'',role:'',status:'candidate',priority:'medium',match:70,salary:'',source:'',followup:'',url:'',notes:''};const data={...defaults,...(job||{})};['company','role','status','priority','match','salary','source','followup','url','notes'].forEach(k=>$(k).value=data[k]??'');els.dialog.showModal()}
-function closeDialog(){els.dialog.close();editingId=null}
-els.form.addEventListener('submit',e=>{e.preventDefault();const data={company:$('company').value.trim(),role:$('role').value.trim(),status:$('status').value,priority:$('priority').value,match:Math.max(0,Math.min(100,Number($('match').value)||0)),salary:$('salary').value.trim(),source:$('source').value.trim(),followup:$('followup').value,url:$('url').value.trim(),notes:$('notes').value.trim()};if(editingId){const idx=jobs.findIndex(j=>j.id===editingId);jobs[idx]={...jobs[idx],...data}}else jobs.unshift({id:uid(),createdAt:Date.now(),...data});save();closeDialog();render()});
-$('deleteBtn').addEventListener('click',()=>{if(!editingId)return;jobs=jobs.filter(j=>j.id!==editingId);save();closeDialog();render()});
-$('addBtn').addEventListener('click',()=>openDialog());$('closeDialog').addEventListener('click',closeDialog);$('cancelBtn').addEventListener('click',closeDialog);els.dialog.addEventListener('click',e=>{if(e.target===els.dialog)closeDialog()});
-[els.search,els.statusFilter,els.priorityFilter,els.sort].forEach(el=>el.addEventListener(el===els.search?'input':'change',render));
-$('langToggle').addEventListener('click',()=>{lang=lang==='en'?'ru':'en';localStorage.setItem(LANG_KEY,lang);applyLanguage()});
-$('exportBtn').addEventListener('click',()=>{const blob=new Blob([JSON.stringify({version:2,exportedAt:new Date().toISOString(),jobs},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='job-search-crm-export.json';a.click();URL.revokeObjectURL(a.href)});
-$('importInput').addEventListener('change',async e=>{const file=e.target.files[0];if(!file)return;try{const parsed=JSON.parse(await file.text());const incoming=Array.isArray(parsed)?parsed:parsed.jobs;if(!Array.isArray(incoming))throw new Error('invalid');jobs=incoming.map(j=>({...j,id:j.id||uid(),createdAt:j.createdAt||Date.now()}));save();render()}catch{alert(lang==='ru'?'Не удалось импортировать файл.':'Could not import this file.')}e.target.value=''});
+function download(name, content, type = 'application/json') {
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = name;
+  document.body.append(anchor);
+  anchor.click();
+  anchor.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 0);
+}
 
-const profileRules=[
-  {labelEn:'Figma / product design',labelRu:'Figma / продуктовый дизайн',terms:['figma','ux','ui','product design','продуктов','интерфейс','прототип'],weight:10},
-  {labelEn:'AI-assisted building',labelRu:'AI-assisted разработка',terms:['ai tools','ai-assisted','claude','codex','cursor','lovable','replit','vibe coding','ии-инструмент','нейросет','ai coding'],weight:12},
-  {labelEn:'JavaScript / web basics',labelRu:'JavaScript / основы веба',terms:['javascript','html','css','frontend','front-end','веб','фронтенд'],weight:8},
-  {labelEn:'Git / GitHub',labelRu:'Git / GitHub',terms:['github','git ',' git','repository','репозитор'],weight:7},
-  {labelEn:'Deployment / Vercel',labelRu:'Деплой / Vercel',terms:['vercel','deploy','deployment','netlify','депло'],weight:7},
-  {labelEn:'API / JSON',labelRu:'API / JSON',terms:['api','json','rest','webhook','интеграц'],weight:7},
-  {labelEn:'Brand / visual communication',labelRu:'Брендинг / визуальная коммуникация',terms:['brand','branding','visual','graphic design','communication design','бренд','графическ','визуаль'],weight:8},
-  {labelEn:'Product thinking',labelRu:'Продуктовое мышление',terms:['product thinking','product manager','product team','mvp','prototype','продуктов','прототип','гипотез'],weight:8},
-  {labelEn:'Junior-friendly',labelRu:'Junior-friendly требования',terms:['junior','intern','internship','trainee','entry level','entry-level','стажер','стажёр','без опыта','начинающ'],weight:10},
-  {labelEn:'Remote-friendly',labelRu:'Удалённый формат',terms:['remote','distributed','work from anywhere','удален','удалён'],weight:5}
-];
-const gapRules=[
-  {labelEn:'Advanced backend / system design',labelRu:'Продвинутый backend / system design',terms:['senior backend','system design','microservices','kubernetes','golang','java spring','c++'],penalty:12},
-  {labelEn:'Strong React / TypeScript requirement',labelRu:'Сильное требование React / TypeScript',terms:['expert react','advanced react','strong react','expert typescript','advanced typescript','3+ years react','3 years react'],penalty:9},
-  {labelEn:'Production n8n / automation experience',labelRu:'Продакшен-опыт n8n / automation',terms:['n8n','make.com','zapier','production automation'],penalty:5},
-  {labelEn:'Several years of commercial development',labelRu:'Несколько лет коммерческой разработки',terms:['3+ years','4+ years','5+ years','3 года','4 года','5 лет'],penalty:14},
-  {labelEn:'Computer science degree required',labelRu:'Обязательное техническое образование',terms:['computer science degree required','degree in computer science required','обязательно высшее техническое','профильное техническое образование обязательно'],penalty:8},
-  {labelEn:'Office-only / relocation constraint',labelRu:'Только офис / обязательная релокация',terms:['office only','on-site only','onsite only','relocation required','только офис','обязательная релокация'],penalty:10}
-];
-function hasTerm(text,terms){return terms.some(term=>text.includes(term))}
-function analyzeVacancy(raw){const text=raw.toLowerCase().replace(/ё/g,'е');let score=42;const strengths=[];const gaps=[];profileRules.forEach(rule=>{if(hasTerm(text,rule.terms)){score+=rule.weight;strengths.push(lang==='ru'?rule.labelRu:rule.labelEn)}});gapRules.forEach(rule=>{if(hasTerm(text,rule.terms)){score-=rule.penalty;gaps.push(lang==='ru'?rule.labelRu:rule.labelEn)}});if(text.length>1200)score+=3;if(/portfolio|портфолио|personal projects|pet project|собственн.*проект/.test(text)){score+=5;strengths.push(lang==='ru'?'Ценятся портфолио / собственные проекты':'Portfolio / personal projects valued')}if(/no .*degree required|degree .*not required|образование .*не обязательно|без профильного образования/.test(text)){score+=4;strengths.push(lang==='ru'?'Профильное образование не обязательно':'No specialist degree required')}score=Math.max(20,Math.min(96,score));const verdict=score>=82?'verdictStrong':score>=68?'verdictGood':score>=52?'verdictStretch':'verdictWeak';const recommendation=score>=82?'recStrong':score>=68?'recGood':score>=52?'recStretch':'recWeak';return{score,verdict,recommendation,strengths:[...new Set(strengths)].slice(0,6),gaps:[...new Set(gaps)].slice(0,5),raw}}
-function renderAnalysis(a){$('analysisEmpty').hidden=true;$('analysisResult').hidden=false;$('analysisScore').textContent=`${a.score}%`;$('analysisVerdict').textContent=t(a.verdict);$('strengthsList').innerHTML=(a.strengths.length?a.strengths:[t('noStrength')]).map(x=>`<li>${escapeHtml(x)}</li>`).join('');$('gapsList').innerHTML=(a.gaps.length?a.gaps:[t('noGap')]).map(x=>`<li>${escapeHtml(x)}</li>`).join('');$('analysisSummary').textContent=t(a.recommendation)}
-$('exampleVacancyBtn').addEventListener('click',()=>{$('vacancyText').value=t('exampleVacancy')});
-$('analyzeBtn').addEventListener('click',()=>{const raw=$('vacancyText').value.trim();if(!raw){$('vacancyText').focus();return}lastAnalysis=analyzeVacancy(raw);renderAnalysis(lastAnalysis)});
-$('saveAnalysisBtn').addEventListener('click',()=>{if(!lastAnalysis)return;const priority=lastAnalysis.score>=82?'veryHigh':lastAnalysis.score>=68?'high':lastAnalysis.score>=52?'medium':'low';const notes=`${t('savedAnalysis')}: ${lastAnalysis.score}% — ${t(lastAnalysis.verdict)}. ${t(lastAnalysis.recommendation)}\n\n${lastAnalysis.raw.slice(0,900)}`;openDialog(null,{match:lastAnalysis.score,priority,status:'candidate',source:'Local matcher',notes})});
+function showToast(message, undo = false) {
+  const toast = $('toast');
+  $('toastMessage').textContent = message;
+  $('toastUndoBtn').hidden = !undo;
+  toast.hidden = false;
+  clearTimeout(showToast.timer);
+  showToast.timer = setTimeout(() => { toast.hidden = true; lastDeleted = null; }, 6500);
+}
 
+function openModal(dialog) {
+  lastFocused = document.activeElement;
+  dialog.showModal();
+  requestAnimationFrame(() => {
+    const focusable = dialog.querySelector('input:not([type="hidden"]), select, textarea, button, a[href]');
+    focusable?.focus();
+  });
+}
+
+function closeModal(dialog) {
+  if (dialog.open) dialog.close();
+  lastFocused?.focus?.();
+  lastFocused = null;
+}
+
+function fillSelect(select, values, { all = '', labels = true } = {}) {
+  const current = select.value;
+  select.innerHTML = `${all ? `<option value="">${escapeHtml(all)}</option>` : ''}${values.map(value => `<option value="${escapeHtml(value)}">${escapeHtml(labels ? t(value) : value)}</option>`).join('')}`;
+  if ([...select.options].some(option => option.value === current)) select.value = current;
+}
+
+function applyLanguage() {
+  document.documentElement.lang = i18n.lang;
+  localStorage.setItem(LANG_KEY, i18n.lang);
+  qsa('[data-i18n]').forEach(node => { node.textContent = t(node.dataset.i18n); });
+  qsa('[data-i18n-placeholder]').forEach(node => { node.placeholder = t(node.dataset.i18nPlaceholder); });
+  $('langToggle').textContent = i18n.lang === 'en' ? 'RU' : 'EN';
+  fillSelect($('statusFilter'), [...ACTIVE_STATUSES, ...ARCHIVE_STATUSES], { all: t('allStatuses') });
+  fillSelect($('priorityFilter'), PRIORITIES, { all: t('allPriorities') });
+  fillSelect($('directionFilter'), DIRECTIONS, { all: t('allDirections') });
+  fillSelect($('workModeFilter'), WORK_MODES, { all: t('allModes') });
+  fillSelect($('status'), ALL_STATUSES);
+  fillSelect($('priority'), PRIORITIES);
+  fillSelect($('direction'), DIRECTIONS);
+  fillSelect($('workMode'), WORK_MODES);
+  renderProfileOptions();
+  renderAll();
+}
+
+function setView(view, updateHash = true) {
+  if (!['today', 'pipeline', 'analyzer', 'analytics', 'settings'].includes(view)) view = 'today';
+  currentView = view;
+  qsa('[data-view]').forEach(section => { const active = section.dataset.view === view; section.hidden = !active; section.classList.toggle('is-active', active); });
+  qsa('[data-view-target]').forEach(button => button.classList.toggle('is-active', button.dataset.viewTarget === view));
+  if (updateHash) history.replaceState(null, '', `#${view}`);
+  if (view === 'pipeline') renderPipeline();
+  if (view === 'analytics') renderAnalytics();
+  if (view === 'settings') renderSettings();
+  $('workspace').focus({ preventScroll: true });
+}
+
+function renderAll() {
+  renderOnboarding();
+  renderToday();
+  renderPipeline();
+  renderAnalyzer();
+  renderAnalytics();
+  renderSettings();
+  if ($('onboarding').hidden) setView(currentView, false);
+}
+
+function renderOnboarding() {
+  const shouldShow = !workspace.jobs.length && localStorage.getItem(ONBOARDING_KEY) !== '1';
+  $('onboarding').hidden = !shouldShow;
+  qsa('.view').forEach(view => {
+    if (shouldShow) view.hidden = true;
+  });
+  document.querySelector('.app-nav').hidden = shouldShow;
+}
+
+function metricCard(label, value, note = '') {
+  return `<article class="metric-card"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong>${note ? `<small>${escapeHtml(note)}</small>` : ''}</article>`;
+}
+
+function actionForJob(job, today) {
+  if (job.followUpAt && (isToday(job.followUpAt, today) || isOverdue(job.followUpAt, today))) return { type: 'followup', label: t('scheduleFollowUp') };
+  if (['candidate', 'preparing'].includes(job.status)) return { type: 'applied', label: t('markApplied') };
+  if (job.status === 'test') return { type: 'open', label: t('reviewTest') };
+  if (job.status === 'applied') return { type: 'followup', label: t('scheduleFollowUp') };
+  if (job.status === 'interview') return { type: 'open', label: t('edit') };
+  return { type: 'open', label: t('edit') };
+}
+
+function renderToday() {
+  const today = localDateKey();
+  const active = activeJobs();
+  const stats = pipelineStats(workspace.jobs, today);
+  const overdue = active.filter(job => isOverdue(job.followUpAt, today));
+  const due = active.filter(job => isToday(job.followUpAt, today));
+  const waiting = active.filter(job => job.status === 'applied');
+  const needApply = active.filter(job => ['candidate', 'preparing'].includes(job.status));
+  const upcoming = active.filter(job => ['test', 'interview'].includes(job.status));
+  const strongest = [...active].sort((a, b) => b.matchScore - a.matchScore || ({ veryHigh:4, high:3, medium:2, low:1 }[b.priority] - { veryHigh:4, high:3, medium:2, low:1 }[a.priority]))[0];
+  $('todayStats').innerHTML = [
+    metricCard(t('dueToday'), String(due.length)), metricCard(t('overdue'), String(overdue.length)), metricCard(t('waiting'), String(waiting.length)), metricCard(t('needApply'), String(needApply.length)), metricCard(t('upcoming'), String(upcoming.length)), metricCard(t('active'), String(stats.activeOpportunities)), metricCard(t('applicationsWeek'), String(stats.applicationsThisWeek))
+  ].join('');
+
+  const actionable = [...overdue, ...due.filter(job => !overdue.includes(job)), ...needApply, ...upcoming, ...waiting]
+    .filter((job, index, list) => list.findIndex(item => item.id === job.id) === index)
+    .slice(0, 8);
+  $('todayActions').innerHTML = actionable.length ? actionable.map(job => {
+    const action = actionForJob(job, today);
+    const follow = job.followUpAt ? (isOverdue(job.followUpAt, today) ? t('overdueLabel') : formatLocalDate(job.followUpAt, i18n.lang)) : t(job.status);
+    return `<article class="action-row"><div><strong>${escapeHtml(job.role)}</strong><span>${escapeHtml(job.company)} · ${escapeHtml(follow)}</span></div><button class="secondary-button compact-action" data-quick-action="${action.type}" data-job-id="${job.id}" type="button">${escapeHtml(action.label)}</button></article>`;
+  }).join('') : `<div class="empty-inline">${escapeHtml(workspace.jobs.length ? t('noActions') : t('emptyToday'))}</div>`;
+
+  if (strongest) {
+    $('strongestTitle').textContent = strongest.role;
+    $('strongestOpportunity').innerHTML = `<div class="opportunity-feature"><div class="feature-score"><strong>${strongest.matchScore}%</strong><span>${escapeHtml(t(strongest.priority))}</span></div><div><p>${escapeHtml(strongest.company)}</p><p class="muted">${escapeHtml([t(strongest.direction), t(strongest.workMode), strongest.location, strongest.salary].filter(Boolean).join(' · '))}</p><button class="text-button" data-open-job="${strongest.id}" type="button">${escapeHtml(t('edit'))} ↗</button></div></div>`;
+  } else {
+    $('strongestTitle').textContent = '—';
+    $('strongestOpportunity').innerHTML = `<div class="empty-inline">${escapeHtml(t('emptyToday'))}</div>`;
+  }
+  bindDynamicActions($('view-today'));
+}
+
+function updateFiltersFromControls() {
+  filters.search = $('searchInput').value.trim().toLowerCase();
+  filters.status = $('statusFilter').value;
+  filters.priority = $('priorityFilter').value;
+  filters.direction = $('directionFilter').value;
+  filters.workMode = $('workModeFilter').value;
+  filters.source = $('sourceFilter').value;
+  filters.match = $('matchFilter').value;
+  filters.followup = $('followupFilter').value;
+}
+
+function filteredJobs() {
+  updateFiltersFromControls();
+  const today = localDateKey();
+  let jobs = workspace.jobs.filter(job => {
+    const haystack = [job.company, job.role, job.notes, job.source, job.location, job.direction].join(' ').toLowerCase();
+    if (filters.search && !haystack.includes(filters.search)) return false;
+    if (filters.status && job.status !== filters.status) return false;
+    if (filters.priority && job.priority !== filters.priority) return false;
+    if (filters.direction && job.direction !== filters.direction) return false;
+    if (filters.workMode && job.workMode !== filters.workMode) return false;
+    if (filters.source && job.source !== filters.source) return false;
+    if (filters.match && job.matchScore < Number(filters.match)) return false;
+    if (filters.followup === 'today' && !isToday(job.followUpAt, today)) return false;
+    if (filters.followup === 'overdue' && !isOverdue(job.followUpAt, today)) return false;
+    if (filters.followup === 'scheduled' && !job.followUpAt) return false;
+    if (filters.followup === 'none' && job.followUpAt) return false;
+    if (savedView === 'high' && !['veryHigh', 'high'].includes(job.priority)) return false;
+    if (savedView === 'followup' && !(isToday(job.followUpAt, today) || isOverdue(job.followUpAt, today))) return false;
+    if (savedView === 'archive' && !ARCHIVE_STATUSES.includes(job.status)) return false;
+    if (savedView !== 'archive' && !filters.status && ARCHIVE_STATUSES.includes(job.status)) return false;
+    return true;
+  });
+  return jobs.sort((a, b) => b.matchScore - a.matchScore || new Date(b.updatedAt) - new Date(a.updatedAt));
+}
+
+function sourceOptions() {
+  const values = [...new Set(workspace.jobs.map(job => job.source).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+  const current = $('sourceFilter').value;
+  $('sourceFilter').innerHTML = `<option value="">${escapeHtml(t('allSources'))}</option>${values.map(value => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`).join('')}`;
+  if (values.includes(current)) $('sourceFilter').value = current;
+}
+
+function savedViewButtons() {
+  const items = [
+    ['high', t('highPriority')], ['followup', t('savedFollowUp')], ['design', t('savedDesign')], ['ai', t('savedAI')], ['archive', t('archive')]
+  ];
+  $('savedViews').innerHTML = items.map(([value, label]) => `<button type="button" class="saved-view ${savedView === value ? 'is-active' : ''}" data-saved-view="${value}">${escapeHtml(label)}</button>`).join('');
+}
+
+function applySavedView(value) {
+  savedView = savedView === value ? '' : value;
+  resetFilterControls(false);
+  if (savedView === 'design') $('directionFilter').value = 'design';
+  if (savedView === 'ai') $('directionFilter').value = 'aiBuilder';
+  savedViewButtons();
+  renderPipeline();
+}
+
+function resetFilterControls(resetSaved = true) {
+  $('searchInput').value = '';
+  ['statusFilter','priorityFilter','directionFilter','workModeFilter','sourceFilter','matchFilter','followupFilter'].forEach(id => { $(id).value = ''; });
+  if (resetSaved) savedView = '';
+}
+
+function followupText(job) {
+  if (!job.followUpAt) return t('none');
+  const today = localDateKey();
+  if (isToday(job.followUpAt, today)) return t('today');
+  if (isOverdue(job.followUpAt, today)) return t('overdueLabel');
+  return formatLocalDate(job.followUpAt, i18n.lang);
+}
+
+function quickStatusSelect(job) {
+  return `<select class="card-status" data-status-job="${job.id}" aria-label="${escapeHtml(t('status'))}">${ALL_STATUSES.map(status => `<option value="${status}" ${job.status === status ? 'selected' : ''}>${escapeHtml(t(status))}</option>`).join('')}</select>`;
+}
+
+function boardCard(job) {
+  return `<article class="job-card" draggable="true" data-job-id="${job.id}" tabindex="0">
+    <div class="job-card-top"><div><span class="company-line">${escapeHtml(job.company)}${job.demo ? ` · ${escapeHtml(t('demoLabel'))}` : ''}</span><h3>${escapeHtml(job.role)}</h3></div><strong class="score-badge">${job.matchScore}%</strong></div>
+    <div class="tag-row"><span class="badge priority-${job.priority}">${escapeHtml(t(job.priority))}</span><span class="badge">${escapeHtml(t(job.direction))}</span><span class="badge">${escapeHtml(t(job.workMode))}</span></div>
+    <dl class="mini-meta"><div><dt>${escapeHtml(t('location'))}</dt><dd>${escapeHtml(job.location || '—')}</dd></div><div><dt>${escapeHtml(t('salary'))}</dt><dd>${escapeHtml(job.salary || '—')}</dd></div><div><dt>${escapeHtml(t('followUp'))}</dt><dd>${escapeHtml(followupText(job))}</dd></div></dl>
+    <div class="job-card-actions">${quickStatusSelect(job)}<button class="text-button" data-open-job="${job.id}" type="button">${escapeHtml(t('edit'))} ↗</button></div>
+  </article>`;
+}
+
+function renderBoard(list) {
+  const columns = (savedView === 'archive' || ARCHIVE_STATUSES.includes(filters.status)) ? ARCHIVE_STATUSES : ACTIVE_STATUSES;
+  $('pipelineBoard').innerHTML = columns.map(status => {
+    const jobs = list.filter(job => job.status === status);
+    return `<section class="board-column" data-drop-status="${status}" aria-labelledby="column-${status}"><div class="column-heading"><h2 id="column-${status}">${escapeHtml(t(status))}</h2><span>${jobs.length}</span></div><div class="column-list">${jobs.map(boardCard).join('') || `<div class="column-empty">—</div>`}</div></section>`;
+  }).join('');
+  bindBoardDnd();
+}
+
+function renderTable(list) {
+  $('jobsBody').innerHTML = list.map(job => `<tr><td><button class="role-button" data-open-job="${job.id}" type="button"><strong>${escapeHtml(job.role)}</strong><span>${escapeHtml(job.company)}</span></button></td><td>${quickStatusSelect(job)}</td><td><strong>${job.matchScore}%</strong></td><td><span class="badge priority-${job.priority}">${escapeHtml(t(job.priority))}</span></td><td>${escapeHtml(t(job.direction))}</td><td>${escapeHtml([t(job.workMode), job.location].filter(Boolean).join(' · '))}</td><td>${escapeHtml(job.salary || '—')}</td><td>${escapeHtml(followupText(job))}</td><td><button class="text-button" data-open-job="${job.id}" type="button">↗</button></td></tr>`).join('');
+}
+
+function renderPipeline() {
+  sourceOptions();
+  savedViewButtons();
+  const list = filteredJobs();
+  $('pipelineBoard').hidden = pipelineMode !== 'board';
+  $('pipelineTable').hidden = pipelineMode !== 'table';
+  $('pipelineEmpty').hidden = list.length !== 0;
+  if (pipelineMode === 'board') renderBoard(list);
+  else renderTable(list);
+  qsa('[data-pipeline-mode]').forEach(button => button.classList.toggle('is-active', button.dataset.pipelineMode === pipelineMode));
+  bindDynamicActions($('view-pipeline'));
+}
+
+function bindBoardDnd() {
+  qsa('.job-card[draggable="true"]').forEach(card => {
+    card.addEventListener('dragstart', event => { event.dataTransfer.setData('text/plain', card.dataset.jobId); card.classList.add('is-dragging'); });
+    card.addEventListener('dragend', () => card.classList.remove('is-dragging'));
+  });
+  qsa('[data-drop-status]').forEach(column => {
+    column.addEventListener('dragover', event => { event.preventDefault(); column.classList.add('is-drop-target'); });
+    column.addEventListener('dragleave', () => column.classList.remove('is-drop-target'));
+    column.addEventListener('drop', event => {
+      event.preventDefault(); column.classList.remove('is-drop-target');
+      const id = event.dataTransfer.getData('text/plain');
+      moveJobStatus(id, column.dataset.dropStatus);
+    });
+  });
+}
+
+function moveJobStatus(id, status) {
+  const index = workspace.jobs.findIndex(job => job.id === id);
+  if (index < 0 || !ALL_STATUSES.includes(status)) return;
+  workspace.jobs[index] = patchJob(workspace.jobs[index], { status });
+  persist(t('saved'));
+  renderAll();
+}
+
+function handleQuickAction(type, id) {
+  const job = getJob(id);
+  if (!job) return;
+  if (type === 'applied') {
+    const index = workspace.jobs.findIndex(item => item.id === id);
+    workspace.jobs[index] = patchJob(job, { status: 'applied', appliedAt: localDateKey(), followUpAt: job.followUpAt || addLocalDays(localDateKey(), 5) });
+    persist(t('saved')); renderAll(); return;
+  }
+  if (type === 'followup') {
+    openJob(id, 'application');
+    $('followUpAt').focus();
+    return;
+  }
+  openJob(id, type === 'open' ? 'overview' : 'application');
+}
+
+function bindDynamicActions(root = document) {
+  root.querySelectorAll('[data-open-job]').forEach(button => button.onclick = () => openJob(button.dataset.openJob));
+  root.querySelectorAll('[data-quick-action]').forEach(button => button.onclick = () => handleQuickAction(button.dataset.quickAction, button.dataset.jobId));
+  root.querySelectorAll('[data-status-job]').forEach(select => select.onchange = () => moveJobStatus(select.dataset.statusJob, select.value));
+  root.querySelectorAll('[data-saved-view]').forEach(button => button.onclick = () => applySavedView(button.dataset.savedView));
+}
+
+function renderProfileOptions() {
+  const options = workspace.profiles.map(profile => `<option value="${escapeHtml(profile.id)}">${escapeHtml(profile.name)}</option>`).join('');
+  ['analyzerProfile', 'jobProfile'].forEach(id => {
+    const select = $(id);
+    const current = select.value || workspace.settings.activeProfileId;
+    select.innerHTML = options;
+    select.value = workspace.profiles.some(profile => profile.id === current) ? current : workspace.profiles[0]?.id || '';
+  });
+}
+
+function renderAnalyzer() {
+  renderProfileOptions();
+  if (!analysis) { $('analysisEmpty').hidden = false; $('analysisResult').hidden = true; return; }
+  const dimensionLabels = { role:'roleDim', skills:'skillsDim', format:'formatDim', level:'levelDim', compensation:'compensationDim', risk:'riskDim' };
+  const recommendationLabels = { 'apply-high':'applyHigh', apply:'apply', review:'review', skip:'skip' };
+  $('analysisEmpty').hidden = true;
+  $('analysisResult').hidden = false;
+  $('analysisResult').innerHTML = `<div class="analysis-hero"><div><p class="kicker">${escapeHtml(t('match'))}</p><strong>${analysis.score}%</strong><span>${escapeHtml(t(analysis.verdict))}</span></div><p>${escapeHtml(t(recommendationLabels[analysis.recommendation]))}</p></div>
+    <section class="analysis-section"><h3>${escapeHtml(t('breakdown'))}</h3><div class="score-breakdown">${analysis.dimensions.map(item => `<div><span>${escapeHtml(t(dimensionLabels[item.label]))}</span><progress max="${item.max}" value="${item.score}">${item.score}/${item.max}</progress><strong>${item.score}/${item.max}</strong></div>`).join('')}</div></section>
+    <div class="analysis-columns"><section><h3>${escapeHtml(t('strongSignals'))}</h3><ul>${(analysis.strengths.length ? analysis.strengths : ['—']).map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul></section><section><h3>${escapeHtml(t('gaps'))}</h3><ul>${(analysis.gaps.length ? analysis.gaps : ['—']).map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul></section></div>
+    ${analysis.hardBlockers.length ? `<section class="blocker-box"><h3>${escapeHtml(t('hardBlockers'))}</h3><ul>${analysis.hardBlockers.map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul></section>` : ''}
+    <button id="analysisAddBtn" class="primary-button" type="button"><span>${escapeHtml(t('addToPipeline'))}</span><span>↗</span></button>`;
+  $('analysisAddBtn').onclick = addAnalysisToPipeline;
+}
+
+function addAnalysisToPipeline() {
+  if (!analysis) return;
+  const identity = extractVacancyIdentity(analysis.raw);
+  openJob(null, 'overview', {
+    company: identity.company,
+    role: identity.role,
+    profileId: $('analyzerProfile').value,
+    matchScore: analysis.score,
+    priority: analysis.suggestedPriority,
+    status: 'candidate',
+    description: analysis.raw,
+    strengths: analysis.strengths,
+    gaps: [...analysis.gaps, ...analysis.hardBlockers]
+  });
+}
+
+function renderAnalytics() {
+  const stats = pipelineStats(workspace.jobs);
+  $('analyticsMetrics').innerHTML = [metricCard(t('applicationsWeek'), String(stats.applicationsThisWeek)), metricCard(t('active'), String(stats.activeOpportunities)), metricCard(t('responseRate'), `${stats.responseRate}%`), metricCard(t('interviews'), String(stats.interviews)), metricCard(t('offers'), String(stats.offers)), metricCard(t('overdue'), String(stats.overdueFollowUps))].join('');
+  const conversions = [['appliedToResponse', stats.conversion.appliedToResponse], ['responseToInterview', stats.conversion.responseToInterview], ['interviewToOffer', stats.conversion.interviewToOffer]];
+  $('conversionChart').innerHTML = conversions.map(([key, value]) => `<div class="conversion-row"><span>${escapeHtml(t(key))}</span><div class="conversion-track"><span style="width:${value}%"></span></div><strong>${value}%</strong></div>`).join('');
+  const activity = weeklyActivity(workspace.jobs);
+  const max = Math.max(1, ...activity.map(item => item.count));
+  $('weeklyChart').setAttribute('aria-label', activity.map(item => `${item.start}: ${item.count}`).join(', '));
+  $('weeklyChart').innerHTML = activity.map(item => `<div class="bar-item"><div class="bar-value" style="height:${Math.max(4, (item.count / max) * 100)}%"><span>${item.count}</span></div><small>${item.start.slice(5)}</small></div>`).join('');
+  const sources = sourcePerformance(workspace.jobs);
+  $('sourceTable').innerHTML = sources.length ? `<div class="source-table"><div class="source-row source-head"><span>${escapeHtml(t('source'))}</span><span>${escapeHtml(t('applications'))}</span><span>${escapeHtml(t('responseRate'))}</span><span>${escapeHtml(t('interviews'))}</span><span>${escapeHtml(t('offers'))}</span></div>${sources.map(item => `<div class="source-row"><strong>${escapeHtml(item.source)}</strong><span>${item.applied}</span><span>${item.applied ? Math.round(item.responses / item.applied * 100) : 0}%</span><span>${item.interviews}</span><span>${item.offers}</span></div>`).join('')}</div>` : `<div class="empty-inline">${escapeHtml(t('emptyAnalytics'))}</div>`;
+}
+
+function renderSettings() {
+  renderProfileOptions();
+  const currentId = $('profileId').value || workspace.settings.activeProfileId || workspace.profiles[0]?.id;
+  const profile = getProfile(currentId);
+  $('profileTabs').innerHTML = workspace.profiles.map(item => `<button type="button" class="profile-tab ${item.id === profile?.id ? 'is-active' : ''}" data-profile-id="${escapeHtml(item.id)}">${escapeHtml(item.name)}</button>`).join('');
+  qsa('[data-profile-id]').forEach(button => button.onclick = () => fillProfileForm(button.dataset.profileId));
+  if (profile && $('profileId').value !== profile.id) fillProfileForm(profile.id, false);
+}
+
+function fillProfileForm(id, rerender = true) {
+  const profile = getProfile(id);
+  if (!profile) return;
+  workspace.settings.activeProfileId = profile.id;
+  $('profileId').value = profile.id;
+  $('profileName').value = profile.name;
+  $('targetRoles').value = textFromList(profile.targetRoles);
+  $('strongSkills').value = textFromList(profile.strongSkills);
+  $('developingSkills').value = textFromList(profile.developingSkills);
+  $('excludedTasks').value = textFromList(profile.excludedTasks);
+  $('preferredWorkMode').value = textFromList(profile.preferredWorkMode);
+  $('allowedGeography').value = textFromList(profile.allowedGeography);
+  $('salaryMinimum').value = profile.salaryMinimum || '';
+  $('acceptableSeniority').value = textFromList(profile.acceptableSeniority);
+  $('hardConstraints').value = textFromList(profile.hardConstraints);
+  renderProfileOptions();
+  if (rerender) renderSettings();
+}
+
+function profileFromForm() {
+  return normalizeProfile({
+    id: $('profileId').value || uid(), name: $('profileName').value,
+    targetRoles: listFromText($('targetRoles').value), strongSkills: listFromText($('strongSkills').value), developingSkills: listFromText($('developingSkills').value), excludedTasks: listFromText($('excludedTasks').value), preferredWorkMode: listFromText($('preferredWorkMode').value), allowedGeography: listFromText($('allowedGeography').value), salaryMinimum: $('salaryMinimum').value, acceptableSeniority: listFromText($('acceptableSeniority').value), hardConstraints: listFromText($('hardConstraints').value)
+  });
+}
+
+function activateDetailTab(tab) {
+  qsa('[data-detail-tab]').forEach(button => button.classList.toggle('is-active', button.dataset.detailTab === tab));
+  qsa('[data-detail-panel]').forEach(panel => panel.hidden = panel.dataset.detailPanel !== tab);
+}
+
+function openJob(id = null, tab = 'overview', prefill = {}) {
+  editingId = id;
+  const job = id ? getJob(id) : { status:'candidate', priority:'medium', direction:'other', workMode:'unknown', matchScore:0, strengths:[], gaps:[], profileId:workspace.settings.activeProfileId, ...prefill };
+  if (!job) return;
+  $('jobDialogTitle').textContent = id ? `${job.company} — ${job.role}` : t('addVacancy');
+  const fields = ['company','role','source','location','salary','appliedAt','followUpAt','nextAction','contactName','contactChannel','rejectionReason','description','notes'];
+  fields.forEach(field => { $(field).value = job[field] || ''; });
+  $('direction').value = DIRECTIONS.includes(job.direction) ? job.direction : 'other';
+  $('status').value = ALL_STATUSES.includes(job.status) ? job.status : 'candidate';
+  $('priority').value = PRIORITIES.includes(job.priority) ? job.priority : 'medium';
+  $('workMode').value = WORK_MODES.includes(job.workMode) ? job.workMode : 'unknown';
+  $('matchScore').value = job.matchScore ?? 0;
+  $('url').value = job.url || '';
+  $('strengths').value = textFromList(job.strengths);
+  $('gaps').value = textFromList(job.gaps);
+  $('jobProfile').value = job.profileId && workspace.profiles.some(profile => profile.id === job.profileId) ? job.profileId : workspace.settings.activeProfileId;
+  $('deleteJobBtn').hidden = !id;
+  const safeUrl = sanitizeUrl(job.url);
+  $('openJobLink').hidden = !safeUrl;
+  $('openJobLink').href = safeUrl || '#';
+  renderActivity(job);
+  activateDetailTab(tab);
+  openModal($('jobDialog'));
+}
+
+function jobFromForm() {
+  return {
+    company:$('company').value.trim(), role:$('role').value.trim(), direction:$('direction').value, status:$('status').value, priority:$('priority').value, matchScore:$('matchScore').value, source:$('source').value.trim(), url:$('url').value.trim(), location:$('location').value.trim(), workMode:$('workMode').value, salary:$('salary').value.trim(), description:$('description').value.trim(), notes:$('notes').value.trim(), appliedAt:$('appliedAt').value, followUpAt:$('followUpAt').value, nextAction:$('nextAction').value.trim(), contactName:$('contactName').value.trim(), contactChannel:$('contactChannel').value.trim(), strengths:listFromText($('strengths').value), gaps:listFromText($('gaps').value), rejectionReason:$('rejectionReason').value.trim(), profileId:$('jobProfile').value
+  };
+}
+
+function renderActivity(job) {
+  const labels = { created:'historyCreated', status_changed:'historyStageChanged', applied:'historyApplied', followup_scheduled:'historyFollowupScheduled', note_added:'historyNoteAdded', interview:'historyInterview', test:'historyTest', rejected:'historyRejected', offer:'historyOffer' };
+  $('activityList').innerHTML = job.history?.length ? [...job.history].reverse().map(item => `<article><span>${escapeHtml(new Date(item.at).toLocaleString(i18n.lang === 'ru' ? 'ru-RU' : 'en-GB'))}</span><strong>${escapeHtml(labels[item.type] ? t(labels[item.type]) : item.type.replaceAll('_', ' '))}</strong>${item.from && item.to ? `<small>${escapeHtml(t(item.from))} → ${escapeHtml(t(item.to))}</small>` : item.date ? `<small>${escapeHtml(formatLocalDate(item.date, i18n.lang))}</small>` : ''}</article>`).join('') : '—';
+}
+
+function saveJobForm(event, force = false) {
+  event?.preventDefault?.();
+  if (!$('jobForm').reportValidity()) return;
+  const data = jobFromForm();
+  if (!data.company || !data.role) return;
+  if (data.url && !sanitizeUrl(data.url)) {
+    $('url').setCustomValidity(i18n.lang === 'ru' ? 'Используй безопасную ссылку http/https.' : 'Use a safe http/https URL.');
+    $('url').reportValidity();
+    $('url').setCustomValidity('');
+    return;
+  }
+  if (!editingId && !force) {
+    const duplicate = findDuplicate(workspace.jobs, data);
+    if (duplicate) {
+      pendingDuplicate = { data, existingId: duplicate.id };
+      $('duplicateSummary').textContent = `${duplicate.company} — ${duplicate.role}`;
+      openModal($('duplicateDialog'));
+      return;
+    }
+  }
+  if (editingId) {
+    const index = workspace.jobs.findIndex(job => job.id === editingId);
+    workspace.jobs[index] = patchJob(workspace.jobs[index], data);
+  } else {
+    workspace.jobs.unshift(createJob(data));
+  }
+  persist(t('saved'));
+  closeModal($('jobDialog'));
+  editingId = null;
+  renderAll();
+  showToast(t('saved'));
+}
+
+function deleteEditingJob() {
+  if (!editingId) return;
+  const index = workspace.jobs.findIndex(job => job.id === editingId);
+  if (index < 0) return;
+  lastDeleted = { job: workspace.jobs[index], index };
+  workspace.jobs.splice(index, 1);
+  persist();
+  closeModal($('jobDialog'));
+  editingId = null;
+  renderAll();
+  showToast(t('deleted'), true);
+}
+
+function exportBackup() {
+  download(`job-search-crm-v1-backup-${localDateKey()}.json`, JSON.stringify(buildBackup(workspace), null, 2));
+}
+
+function beginImport() { $('importInput').click(); }
+
+async function handleImportFile(file) {
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) { showToast(t('fileTooLarge')); return; }
+  const parsed = parseImportText(await file.text());
+  if (!parsed.ok) { showToast(t('invalidBackup')); return; }
+  pendingImport = parsed.data;
+  $('importPreview').innerHTML = `<div><span>${escapeHtml(t('profiles'))}</span><strong>${parsed.data.profiles.length}</strong></div><div><span>${escapeHtml(t('vacancies'))}</span><strong>${parsed.data.jobs.length}</strong></div><div><span>${escapeHtml(t('schema'))}</span><strong>v${parsed.data.schemaVersion}</strong></div>`;
+  openModal($('importDialog'));
+}
+
+function requestConfirm(message, action, label = t('confirm')) {
+  pendingConfirm = action;
+  $('confirmMessage').textContent = message;
+  $('confirmOkBtn').textContent = label;
+  openModal($('confirmDialog'));
+}
+
+function doMergeImport() {
+  workspace = mergeWorkspaces(workspace, pendingImport);
+  persist(t('imported'));
+  pendingImport = null;
+  closeModal($('importDialog'));
+  localStorage.setItem(ONBOARDING_KEY, '1');
+  renderAll(); showToast(t('imported'));
+}
+
+function doReplaceImport() {
+  if (!pendingImport) return;
+  requestConfirm(t('confirmReplace'), () => {
+    exportBackup();
+    workspace = pendingImport;
+    persist(t('imported'));
+    pendingImport = null;
+    closeModal($('importDialog'));
+    localStorage.setItem(ONBOARDING_KEY, '1');
+    renderAll(); showToast(t('imported'));
+  }, t('replace'));
+}
+
+function startEmpty() {
+  localStorage.setItem(ONBOARDING_KEY, '1');
+  renderAll();
+  setView('today');
+}
+
+function loadDemo() {
+  workspace.jobs = createDemoJobs();
+  workspace.settings.demoLoaded = true;
+  persist();
+  localStorage.setItem(ONBOARDING_KEY, '1');
+  renderAll();
+  setView('today');
+}
+
+function bindStaticEvents() {
+  qsa('[data-view-target]').forEach(button => button.addEventListener('click', () => setView(button.dataset.viewTarget)));
+  qsa('[data-pipeline-mode]').forEach(button => button.addEventListener('click', () => { pipelineMode = button.dataset.pipelineMode; renderPipeline(); }));
+  $('langToggle').addEventListener('click', () => { i18n.lang = i18n.lang === 'en' ? 'ru' : 'en'; applyLanguage(); });
+  $('headerAddBtn').addEventListener('click', () => openJob());
+  $('closeJobDialog').addEventListener('click', () => closeModal($('jobDialog')));
+  $('jobDialog').addEventListener('click', event => { if (event.target === $('jobDialog')) closeModal($('jobDialog')); });
+  $('jobForm').addEventListener('submit', event => saveJobForm(event));
+  $('deleteJobBtn').addEventListener('click', deleteEditingJob);
+  qsa('[data-detail-tab]').forEach(button => button.addEventListener('click', () => activateDetailTab(button.dataset.detailTab)));
+  $('analyzeBtn').addEventListener('click', () => {
+    const raw = $('vacancyText').value.trim();
+    if (!raw) { $('vacancyText').focus(); return; }
+    const profile = getProfile($('analyzerProfile').value);
+    analysis = analyzeVacancy(raw, profile);
+    workspace.settings.activeProfileId = profile.id;
+    persist();
+    renderAnalyzer();
+  });
+  $('analyzerProfile').addEventListener('change', () => { workspace.settings.activeProfileId = $('analyzerProfile').value; persist(); });
+  ['searchInput','statusFilter','priorityFilter','directionFilter','workModeFilter','sourceFilter','matchFilter','followupFilter'].forEach(id => $(id).addEventListener(id === 'searchInput' ? 'input' : 'change', () => { savedView = ''; renderPipeline(); }));
+  $('resetFiltersBtn').addEventListener('click', () => { resetFilterControls(); renderPipeline(); });
+  $('profileForm').addEventListener('submit', event => {
+    event.preventDefault();
+    const profile = profileFromForm();
+    const index = workspace.profiles.findIndex(item => item.id === profile.id);
+    if (index >= 0) workspace.profiles[index] = profile; else workspace.profiles.push(profile);
+    workspace.settings.activeProfileId = profile.id;
+    persist(t('saved')); renderSettings(); renderProfileOptions(); showToast(t('saved'));
+  });
+  $('newProfileBtn').addEventListener('click', () => {
+    const profile = normalizeProfile({ id: uid(), name: i18n.lang === 'ru' ? 'Новый профиль' : 'New profile' });
+    workspace.profiles.push(profile); workspace.settings.activeProfileId = profile.id; persist(); fillProfileForm(profile.id); $('profileName').select();
+  });
+  $('exportJsonBtn').addEventListener('click', exportBackup);
+  $('exportCsvBtn').addEventListener('click', () => download(`job-search-crm-${localDateKey()}.csv`, `\ufeff${jobsToCsv(workspace.jobs)}`, 'text/csv;charset=utf-8'));
+  $('importBtn').addEventListener('click', beginImport);
+  $('onboardingImportBtn').addEventListener('click', beginImport);
+  $('importInput').addEventListener('change', event => { handleImportFile(event.target.files?.[0]); event.target.value = ''; });
+  $('cancelImportBtn').addEventListener('click', () => { pendingImport = null; closeModal($('importDialog')); });
+  $('mergeImportBtn').addEventListener('click', doMergeImport);
+  $('replaceImportBtn').addEventListener('click', doReplaceImport);
+  $('clearWorkspaceBtn').addEventListener('click', () => requestConfirm(t('confirmClear'), () => {
+    exportBackup();
+    const profiles = workspace.profiles.length ? workspace.profiles : defaultProfiles();
+    workspace = { ...emptyWorkspace(), profiles };
+    persist();
+    localStorage.setItem(ONBOARDING_KEY, '1');
+    renderAll(); showToast(t('saved'));
+  }, t('clearWorkspace')));
+  $('confirmCancelBtn').addEventListener('click', () => { pendingConfirm = null; closeModal($('confirmDialog')); });
+  $('confirmOkBtn').addEventListener('click', () => { const action = pendingConfirm; pendingConfirm = null; closeModal($('confirmDialog')); action?.(); });
+  $('duplicateOpenBtn').addEventListener('click', () => { const id = pendingDuplicate?.existingId; pendingDuplicate = null; closeModal($('duplicateDialog')); closeModal($('jobDialog')); if (id) openJob(id); });
+  $('duplicateCreateBtn').addEventListener('click', () => { const data = pendingDuplicate?.data; pendingDuplicate = null; closeModal($('duplicateDialog')); if (data) saveJobForm(null, true); });
+  $('toastUndoBtn').addEventListener('click', () => {
+    if (!lastDeleted) return;
+    workspace.jobs.splice(lastDeleted.index, 0, lastDeleted.job); lastDeleted = null; persist(); renderAll(); $('toast').hidden = true;
+  });
+  $('startEmptyBtn').addEventListener('click', startEmpty);
+  $('loadDemoBtn').addEventListener('click', loadDemo);
+  window.addEventListener('hashchange', () => setView(location.hash.replace('#', '') || 'today', false));
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape') return;
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') { event.preventDefault(); setView('pipeline'); setTimeout(() => $('searchInput').focus(), 0); }
+    if ((event.ctrlKey || event.metaKey) && event.key === 'Enter' && $('jobDialog').open) { event.preventDefault(); $('jobForm').requestSubmit(); }
+  });
+}
+
+bindStaticEvents();
 applyLanguage();
+if (loaded.migratedFrom && loaded.migratedFrom !== 'error') showToast(t('migrated'));

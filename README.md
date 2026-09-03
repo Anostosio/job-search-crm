@@ -1,180 +1,169 @@
 # Job Search CRM
 
-A bilingual local-first job-search CRM with pipeline tracking, follow-ups and a transparent vacancy-matching layer.
+**Anostosio° / Product Lab · Project 02 · v1.0**
 
-**Live demo:** https://job-search-crm-psi.vercel.app/
+Job Search CRM turns job search into a clear system of opportunities, actions and decisions. It is a bilingual, local-first workspace for daily pipeline management — not a job board and not a spreadsheet wrapper.
 
-## Preview
+**Live:** https://job-search-crm-psi.vercel.app/  
+**Portfolio:** https://anostosio.ru/
 
-![Job Search CRM — Russian interface with local vacancy matcher](assets/job-search-crm-preview.webp)
+## What v1.0 does
 
-## Portfolio snapshot
+- **Today workspace** surfaces due actions, overdue contacts, applications waiting for response, roles that still need an application, upcoming tests/interviews and the strongest current opportunity.
+- **Pipeline** has Board and Table views, active stages (`candidate → preparing → applied → test → interview → offer`) and a separate Archive for `rejected` / `closed`.
+- **Vacancy detail** keeps overview, application data, match evidence, contact details, notes and activity history in one focused surface.
+- **Duplicate protection** checks normalized URL and normalized `company + role` before a new record is created.
+- **Candidate Profiles** support Design and AI Builder out of the box and remain fully editable.
+- **Vacancy Analyzer** uses transparent local rules with six visible dimensions instead of an opaque score.
+- **Analytics** focuses on applications, active opportunities, response rate, interviews, offers, overdue contacts, conversion and source performance.
+- **Data safety** includes versioned JSON backup, legacy migration, import preview, Merge / Replace, safety backup before Replace, CSV export and undo for vacancy deletion.
+- **Bilingual UX** keeps the same product structure in English and Russian.
+- **Accessibility** includes semantic landmarks, skip link, visible focus, keyboard-accessible actions, modal dialogs, live status messages, minimum mobile hit areas and reduced-motion support.
 
-**Role:** Product concept · UX/UI · data model · front-end · matching logic · deployment  
-**Status:** MVP v0.3 — deployed  
-**Format:** EN / RU · local-first web app  
-**Core idea:** turn scattered vacancy tracking into a clear, private and actionable decision system
+## Product model
 
-## Problem
-
-Job searching quickly becomes hard to manage when vacancies are spread across job boards, chats, emails and notes. A spreadsheet can store rows, but it does not automatically surface the strongest opportunities, overdue follow-ups or the reasoning behind a match score.
-
-## Solution
-
-Job Search CRM combines a lightweight application pipeline with local decision support.
-
-The user can:
-
-- add, edit and delete vacancies
-- move roles through application stages
-- assign match score and priority
-- store salary, source, link and notes
-- set follow-up dates
-- search, filter and sort the pipeline
-- see live pipeline statistics
-- paste a vacancy description into a local matcher
-- receive detected strengths, gaps and a suggested score
-- save the analysis directly into the CRM
-- export and restore the whole dataset as JSON
-- switch between English and Russian
-
-## Product flow
+The application is local-first. No account, backend or cloud database is required for v1.0. Vacancy data stays in the browser until the user explicitly exports it.
 
 ```text
-Vacancy / application data
-      ↓
-Local data model
-      ↓
+Vacancy / analyzer input
+        ↓
+Schema v3 workspace
+        ↓
 localStorage persistence
-      ↓
-Search / filters / sorting
-      ↓
-Pipeline dashboard + next actions
-
-Vacancy description
-      ↓
-Transparent local matching rules
-      ↓
-Strengths + risks + suggested score
-      ↓
-Optional save into CRM
+        ↓
+Today / Pipeline / Analytics
+        ↓
+Versioned JSON + CSV backup
 ```
 
-## Key product decisions
+## Data schema v3
 
-### 1. Local-first by default
+A vacancy supports:
 
-The MVP stores job-search data in the browser. No account, backend or database is required, and personal vacancy data does not need to leave the device.
+```text
+id
+company / role / direction
+status / priority / matchScore
+source / url
+location / workMode / salary
+description / notes
+createdAt / updatedAt / appliedAt / followUpAt
+nextAction
+contactName / contactChannel
+strengths / gaps
+rejectionReason
+profileId
+history[]
+```
 
-### 2. Transparent matching instead of fake AI
+Activity history records key events such as creation, stage changes, application, scheduled follow-up, notes, tests, interviews, rejection and offer.
 
-The current matcher is deliberately rule-based. It checks vacancy text for relevant signals and risk patterns, then explains what contributed to the result. The logic is inspectable in `app.js` and can be adjusted.
+### Legacy migration
 
-### 3. Decision support, not just storage
+v1.0 reads the previous `anostosio-job-search-crm-v1` / v2-style data and migrates it to schema v3 without deleting the old storage key. Legacy fields such as `match` and `followup` are normalized to `matchScore` and `followUpAt`.
 
-The dashboard calculates active opportunities, average match, follow-up pressure and the strongest current role. The matcher adds an explainable first-pass evaluation before a vacancy enters the pipeline.
+## Transparent matcher v2
 
-### 4. Portable data
+The local matcher scores a vacancy against the selected Candidate Profile across visible dimensions:
 
-JSON export and import make the local-first approach less fragile. A user can back up the pipeline and restore it in another browser session.
+| Dimension | Max |
+| --- | ---: |
+| Role relevance | 25 |
+| Skills | 25 |
+| Format / geography | 15 |
+| Experience level | 15 |
+| Compensation | 10 |
+| Risks / constraints | 10 |
 
-### 5. Shared bilingual UX
+The result includes a final score, dimension breakdown, strong signals, gaps, hard blockers, recommendation and suggested priority. The implementation is deterministic and does not present local rules as AI.
 
-English and Russian reuse one application state and logic layer instead of duplicating the project.
+## Import / export safety
 
-## What I built
+JSON backups use:
 
-- Product concept and workflow
-- Vacancy data model
-- CRUD flow
-- application status pipeline
-- match and priority system
-- search, filters and sorting
-- live statistics
-- next-action recommendations
-- localStorage persistence
-- JSON backup / restore
-- EN / RU interface
-- rule-based vacancy parser
-- strengths / risks extraction
-- score and verdict generation
-- save-analysis-to-CRM flow
-- responsive UI
-- Vercel deployment
+```json
+{
+  "schemaVersion": 3,
+  "exportedAt": "...",
+  "profiles": [],
+  "jobs": [],
+  "settings": {}
+}
+```
 
-## Stack
+Import validates JSON shape and size, normalizes jobs and URLs, supports older backups, previews the incoming workspace and offers **Merge** or **Replace**. Replace creates a safety backup first.
 
-- HTML5
-- CSS3
-- Vanilla JavaScript
-- Local Storage API
-- File / Blob API
-- JSON parsing and validation
-- rule-based text matching
-- responsive layout
-- Git / GitHub
-- Vercel
+## Empty and demo workspaces
 
-## Matching logic
+v1.0 does not silently seed fake vacancies. First launch offers three explicit options:
 
-The matcher looks for signals relevant to a junior AI-builder / design-led product profile, such as:
+- Start empty
+- Load demo workspace
+- Import backup
 
-- Figma and product design
-- AI coding tools
-- JavaScript
-- GitHub and deployment
-- APIs / JSON
-- visual communication
-- product thinking
-- junior-friendly language
-- remote work
+Demo vacancies are marked as demo records.
 
-It also flags selected risk signals such as advanced backend requirements, strong production React / TypeScript expectations, multiple years of commercial development, office-only constraints and mandatory specialist degrees.
+## Architecture
 
-The output is intentionally framed as **decision support**, not as a model-generated truth about a candidate.
+Vanilla JavaScript stays intentionally lightweight and is split by responsibility:
 
-## What I learned
+```text
+app.js                 UI orchestration
+lib/storage.js         schema v3 persistence + migration
+lib/jobs.js            vacancy model + duplicates + history + URL safety
+lib/matcher.js         profile-aware transparent scoring
+lib/profiles.js        candidate profile model
+lib/date.js            local calendar-date helpers
+lib/import-export.js   backup validation / merge / CSV
+lib/analytics.js       pipeline and conversion calculations
+lib/i18n.js            EN / RU product copy
+```
 
-This project gave me practical experience with application state, CRUD operations, browser persistence, data portability, text parsing and explainable scoring logic.
+No React, Supabase, authentication or LLM dependency is required for v1.0.
 
-The strongest product lesson was that automation does not always need an LLM. For a constrained first-pass task, transparent rules can be faster to test, cheaper to run and easier to explain. That also creates a clear future path: compare the deterministic matcher with a server-side AI evaluator instead of replacing working logic blindly.
+## Design system
 
-## Current MVP
+Job Search CRM shares the Product Lab visual language with Brand Brief Studio without copying its information architecture:
 
-**MVP v0.3 — deployed local vacancy matcher**
+- warm editorial palette
+- Unbounded for display / key numbers
+- Manrope for UI and body
+- calm cards and panels
+- semantic status colors
+- visible focus states
+- restrained shadows
+- tool-first layout instead of a recurring marketing hero
 
-Included now:
+## Responsive behavior
 
-- EN / RU interface
-- local-first CRM
-- application pipeline
-- search / filters / sorting
-- dashboard statistics
-- follow-up support
-- JSON backup / restore
-- local vacancy matcher
-- explained strengths and gaps
-- suggested match score
-- deployed live demo
+Desktop uses the full workspace and board. Tablet collapses the application shell while keeping the navigation available. Mobile uses horizontally navigable pipeline columns, compact controls, full-height vacancy detail and 44px minimum interactive targets.
 
-## Next iterations
+## Quality
 
-- editable skill profile and weights
-- CSV export
-- kanban pipeline view
-- richer analytics
-- optional AI-assisted comparison behind a server endpoint
-- cloud sync / Supabase version
-- reminders and browser notifications
+Run locally with any static server. Automated checks require Node 20+:
 
-## Related work
+```bash
+npm test
+npm run check
+```
 
-**AI Brand Brief:** https://ai-brand-brief.vercel.app/  
-A bilingual branding product focused on structured generation, safe server-side AI architecture, editable output and graceful fallback.
+Tests cover:
 
-**Portfolio:** https://anostosio.ru/
+- data migration
+- duplicate detection
+- matcher calculation
+- local date helpers
+- import validation
+- URL sanitization
+- pipeline statistics / analytics
+
+GitHub Actions runs tests and syntax checks on pushes and pull requests to `main`.
+
+## Product Lab surface
+
+The repository includes favicon, web manifest, theme color, Open Graph / Twitter metadata, canonical URL, hreflang, robots.txt and sitemap.xml. v1.0 does not load third-party analytics by default, keeping the production surface aligned with the local-first product promise.
 
 ---
 
-Created by **Anostosio°**  
-Graphic Design · Branding · Advertising · AI-assisted Product Building
+**Product concept, UX/UI and front-end by Anostosio°**  
+https://anostosio.ru/

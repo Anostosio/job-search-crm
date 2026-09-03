@@ -1,0 +1,9 @@
+{
+  "name":"Job Search CRM — Anostosio° / Product Lab",
+  "short_name":"Job Search CRM",
+  "start_url":"/",
+  "display":"standalone",
+  "background_color":"#f4f0eb",
+  "theme_color":"#f4f0eb",
+  "icons":[{"src":"/favicon.svg","sizes":"any","type":"image/svg+xml"}]
+}

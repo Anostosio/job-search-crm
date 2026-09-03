@@ -1,3 +1,4 @@
+import './analytics.js';
 import {loadWorkspace} from './lib/storage.js';
 import {duplicateOf, sanitizeUrl} from './lib/jobs.js';
 

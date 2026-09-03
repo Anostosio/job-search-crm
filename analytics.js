@@ -1,4 +1,4 @@
-const METRICA_ID = 112263821;
+const METRICA_ID = 112266574;
 const CONSENT_KEY = 'jobSearchCrm.analyticsConsent.v1';
 
 const copy = {
@@ -50,6 +50,7 @@ function loadMetrica() {
     ssr: true,
     webvisor: false,
     clickmap: true,
+    ecommerce: 'dataLayer',
     referrer: document.referrer,
     url: location.href,
     accurateTrackBounce: true,

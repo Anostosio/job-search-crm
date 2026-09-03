@@ -53,7 +53,7 @@
         </div>
         <div id="todayStats" class="metric-grid"></div>
         <div class="today-grid">
-          <section class="panel"><div class="panel-heading"><div><p class="kicker">Next Best Actions</p><h2 data-i18n="dueToday">Due today</h2></div></div><div id="todayActions" class="action-list"></div></section>
+          <section class="panel"><div class="panel-heading"><div><p class="kicker" data-i18n="nextBestActions">Next Best Actions</p><h2 data-i18n="dueToday">Due today</h2></div></div><div id="todayActions" class="action-list"></div></section>
           <section class="panel"><div class="panel-heading"><div><p class="kicker" data-i18n="strongest">Strongest opportunity</p><h2 id="strongestTitle">—</h2></div></div><div id="strongestOpportunity"></div></section>
         </div>
       </section>
@@ -67,7 +67,7 @@
         <section class="filters panel compact-panel" aria-label="Filters">
           <input id="searchInput" type="search" data-i18n-placeholder="search" placeholder="Search" />
           <select id="statusFilter"></select><select id="priorityFilter"></select><select id="directionFilter"></select><select id="workModeFilter"></select><select id="sourceFilter"></select>
-          <select id="matchFilter"><option value="">Match</option><option value="80">80%+</option><option value="65">65%+</option><option value="50">50%+</option></select>
+          <select id="matchFilter"><option value="" data-i18n="match">Match</option><option value="80">80%+</option><option value="65">65%+</option><option value="50">50%+</option></select>
           <select id="followupFilter"><option value="" data-i18n="allFollowups">All follow-up states</option><option value="today" data-i18n="today">Today</option><option value="overdue" data-i18n="overdueLabel">Overdue</option><option value="scheduled" data-i18n="scheduled">Scheduled</option><option value="none" data-i18n="none">None</option></select>
           <button id="resetFiltersBtn" class="text-button" type="button" data-i18n="resetFilters">Reset filters</button>
         </section>
@@ -81,7 +81,7 @@
         <div class="analyzer-layout">
           <section class="panel analyzer-input-panel">
             <label><span data-i18n="profile">Candidate profile</span><select id="analyzerProfile"></select></label>
-            <label><span data-i18n="pasteVacancy">Paste vacancy description</span><textarea id="vacancyText" rows="18" maxlength="12000" placeholder="Paste the vacancy text here..."></textarea></label>
+            <label><span data-i18n="pasteVacancy">Paste vacancy description</span><textarea id="vacancyText" rows="18" maxlength="12000" data-i18n-placeholder="vacancyPlaceholder" placeholder="Paste the vacancy text here..."></textarea></label>
             <button id="analyzeBtn" class="primary-button" type="button"><span data-i18n="analyze">Analyze vacancy</span><span aria-hidden="true">↗</span></button>
             <p class="privacy-note" data-i18n="privacy"></p>
           </section>
@@ -124,7 +124,7 @@
             <p class="privacy-note" data-i18n="privacy"></p>
             <div class="stack-actions"><button id="exportJsonBtn" class="secondary-button" type="button" data-i18n="exportJson">Export JSON</button><button id="exportCsvBtn" class="secondary-button" type="button" data-i18n="exportCsv">Export CSV</button><button id="importBtn" class="secondary-button" type="button" data-i18n="importBackup">Import backup</button></div>
             <input id="importInput" type="file" accept="application/json,.json" hidden />
-            <div class="danger-zone"><p class="kicker">Danger zone</p><button id="clearWorkspaceBtn" class="danger-button" type="button" data-i18n="clearWorkspace">Clear workspace</button></div>
+            <div class="danger-zone"><p class="kicker" data-i18n="dangerZone">Danger zone</p><button id="clearWorkspaceBtn" class="danger-button" type="button" data-i18n="clearWorkspace">Clear workspace</button></div>
           </section>
         </div>
       </section>
@@ -140,7 +140,7 @@
 
   <dialog id="jobDialog" class="detail-dialog">
     <form id="jobForm" class="detail-surface" novalidate>
-      <div class="detail-header"><div><p class="kicker">Vacancy detail</p><h2 id="jobDialogTitle">New vacancy</h2></div><button id="closeJobDialog" class="icon-button" type="button" aria-label="Close">×</button></div>
+      <div class="detail-header"><div><p class="kicker" data-i18n="vacancyDetail">Vacancy detail</p><h2 id="jobDialogTitle">New vacancy</h2></div><button id="closeJobDialog" class="icon-button" type="button" aria-label="Close">×</button></div>
       <div class="detail-tabs" role="tablist" aria-label="Vacancy sections"><button type="button" class="is-active" data-detail-tab="overview" data-i18n="overview">Overview</button><button type="button" data-detail-tab="application" data-i18n="application">Application</button><button type="button" data-detail-tab="match" data-i18n="matchTab">Match</button><button type="button" data-detail-tab="contact" data-i18n="contact">Contact</button><button type="button" data-detail-tab="notes" data-i18n="notes">Notes</button><button type="button" data-detail-tab="activity" data-i18n="activity">Activity</button></div>
       <div class="detail-body">
         <section data-detail-panel="overview">
@@ -170,7 +170,7 @@
 
   <dialog id="duplicateDialog" class="small-dialog"><div class="modal-card"><p class="kicker" data-i18n="duplicateTitle">Possible duplicate</p><h2 id="duplicateHeading" data-i18n="duplicateText">A similar vacancy already exists.</h2><p id="duplicateSummary"></p><div class="modal-actions"><button id="duplicateOpenBtn" class="secondary-button" type="button" data-i18n="openExisting">Open existing</button><button id="duplicateCreateBtn" class="primary-button compact" type="button"><span data-i18n="createAnyway">Create anyway</span><span>↗</span></button></div></div></dialog>
   <dialog id="importDialog" class="small-dialog"><div class="modal-card"><p class="kicker" data-i18n="importTitle">Import backup</p><h2 data-i18n="importPreview">Import preview</h2><div id="importPreview" class="import-preview"></div><p class="privacy-note" data-i18n="backupBeforeReplace"></p><div class="modal-actions"><button id="cancelImportBtn" class="text-button" type="button" data-i18n="cancel">Cancel</button><button id="mergeImportBtn" class="secondary-button" type="button" data-i18n="merge">Merge</button><button id="replaceImportBtn" class="danger-button" type="button" data-i18n="replace">Replace</button></div></div></dialog>
-  <dialog id="confirmDialog" class="small-dialog"><div class="modal-card"><p class="kicker">Confirm</p><h2 id="confirmMessage"></h2><div class="modal-actions"><button id="confirmCancelBtn" class="secondary-button" type="button" data-i18n="cancel">Cancel</button><button id="confirmOkBtn" class="danger-button" type="button">Confirm</button></div></div></dialog>
+  <dialog id="confirmDialog" class="small-dialog"><div class="modal-card"><p class="kicker" data-i18n="confirm">Confirm</p><h2 id="confirmMessage"></h2><div class="modal-actions"><button id="confirmCancelBtn" class="secondary-button" type="button" data-i18n="cancel">Cancel</button><button id="confirmOkBtn" class="danger-button" type="button">Confirm</button></div></div></dialog>
 
   <div id="toast" class="toast" role="status" aria-live="polite" hidden><span id="toastMessage"></span><button id="toastUndoBtn" type="button" class="text-button" hidden data-i18n="undo">Undo</button></div>
   <div id="liveRegion" class="sr-only" aria-live="polite" aria-atomic="true"></div>

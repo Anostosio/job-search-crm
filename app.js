@@ -261,7 +261,7 @@ function boardCard(job) {
 }
 
 function renderBoard(list) {
-  const columns = savedView === 'archive' ? ARCHIVE_STATUSES : ACTIVE_STATUSES;
+  const columns = (savedView === 'archive' || ARCHIVE_STATUSES.includes(filters.status)) ? ARCHIVE_STATUSES : ACTIVE_STATUSES;
   $('pipelineBoard').innerHTML = columns.map(status => {
     const jobs = list.filter(job => job.status === status);
     return `<section class="board-column" data-drop-status="${status}" aria-labelledby="column-${status}"><div class="column-heading"><h2 id="column-${status}">${escapeHtml(t(status))}</h2><span>${jobs.length}</span></div><div class="column-list">${jobs.map(boardCard).join('') || `<div class="column-empty">—</div>`}</div></section>`;
@@ -459,8 +459,8 @@ function jobFromForm() {
 }
 
 function renderActivity(job) {
-  const labels = { created:'Created', status_changed:'Stage changed', applied:'Applied', followup_scheduled:'Follow-up scheduled', note_added:'Note added', interview:'Interview', test:'Test task', rejected:'Rejected', offer:'Offer' };
-  $('activityList').innerHTML = job.history?.length ? [...job.history].reverse().map(item => `<article><span>${escapeHtml(new Date(item.at).toLocaleString(i18n.lang === 'ru' ? 'ru-RU' : 'en-GB'))}</span><strong>${escapeHtml(labels[item.type] || item.type.replaceAll('_', ' '))}</strong>${item.from && item.to ? `<small>${escapeHtml(t(item.from))} → ${escapeHtml(t(item.to))}</small>` : item.date ? `<small>${escapeHtml(formatLocalDate(item.date, i18n.lang))}</small>` : ''}</article>`).join('') : '—';
+  const labels = { created:'historyCreated', status_changed:'historyStageChanged', applied:'historyApplied', followup_scheduled:'historyFollowupScheduled', note_added:'historyNoteAdded', interview:'historyInterview', test:'historyTest', rejected:'historyRejected', offer:'historyOffer' };
+  $('activityList').innerHTML = job.history?.length ? [...job.history].reverse().map(item => `<article><span>${escapeHtml(new Date(item.at).toLocaleString(i18n.lang === 'ru' ? 'ru-RU' : 'en-GB'))}</span><strong>${escapeHtml(labels[item.type] ? t(labels[item.type]) : item.type.replaceAll('_', ' '))}</strong>${item.from && item.to ? `<small>${escapeHtml(t(item.from))} → ${escapeHtml(t(item.to))}</small>` : item.date ? `<small>${escapeHtml(formatLocalDate(item.date, i18n.lang))}</small>` : ''}</article>`).join('') : '—';
 }
 
 function saveJobForm(event, force = false) {
@@ -517,15 +517,15 @@ function beginImport() { $('importInput').click(); }
 
 async function handleImportFile(file) {
   if (!file) return;
-  if (file.size > 5 * 1024 * 1024) { showToast('Import file is too large.'); return; }
+  if (file.size > 5 * 1024 * 1024) { showToast(t('fileTooLarge')); return; }
   const parsed = parseImportText(await file.text());
-  if (!parsed.ok) { showToast(i18n.lang === 'ru' ? 'Не удалось проверить backup.' : 'Could not validate this backup.'); return; }
+  if (!parsed.ok) { showToast(t('invalidBackup')); return; }
   pendingImport = parsed.data;
-  $('importPreview').innerHTML = `<div><span>${escapeHtml(t('profiles'))}</span><strong>${parsed.data.profiles.length}</strong></div><div><span>Vacancies</span><strong>${parsed.data.jobs.length}</strong></div><div><span>Schema</span><strong>v${parsed.data.schemaVersion}</strong></div>`;
+  $('importPreview').innerHTML = `<div><span>${escapeHtml(t('profiles'))}</span><strong>${parsed.data.profiles.length}</strong></div><div><span>${escapeHtml(t('vacancies'))}</span><strong>${parsed.data.jobs.length}</strong></div><div><span>${escapeHtml(t('schema'))}</span><strong>v${parsed.data.schemaVersion}</strong></div>`;
   openModal($('importDialog'));
 }
 
-function requestConfirm(message, action, label = 'Confirm') {
+function requestConfirm(message, action, label = t('confirm')) {
   pendingConfirm = action;
   $('confirmMessage').textContent = message;
   $('confirmOkBtn').textContent = label;

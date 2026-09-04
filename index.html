@@ -19,10 +19,9 @@
   <link rel="alternate" hreflang="x-default" href="https://job-search-crm-psi.vercel.app/" />
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <link rel="manifest" href="/site.webmanifest" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Unbounded:wght@500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="fonts.css" />
   <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="privacy.css" />
 </head>
 <body>
   <a class="skip-link" href="#workspace" data-i18n="skip">Skip to workspace</a>
@@ -123,6 +122,7 @@
             <p class="privacy-note" data-i18n="privacy"></p>
             <div class="stack-actions"><button id="exportJsonBtn" class="secondary-button" type="button" data-i18n="exportJson">Export JSON</button><button id="exportCsvBtn" class="secondary-button" type="button" data-i18n="exportCsv">Export CSV</button><button id="importBtn" class="secondary-button" type="button" data-i18n="importBackup">Import backup</button></div>
             <input id="importInput" type="file" accept="application/json,.json" hidden />
+            <p id="backupPrivacyWarning" class="privacy-note backup-privacy-warning"></p>
             <div class="danger-zone"><p class="kicker">Danger zone</p><button id="clearWorkspaceBtn" class="danger-button" type="button" data-i18n="clearWorkspace">Clear workspace</button></div>
           </section>
         </div>
@@ -170,12 +170,13 @@
   <dialog id="duplicateDialog" class="small-dialog"><div class="modal-card"><p class="kicker" data-i18n="duplicateTitle">Possible duplicate</p><h2 id="duplicateHeading" data-i18n="duplicateText">A similar vacancy already exists.</h2><p id="duplicateSummary"></p><div class="modal-actions"><button id="duplicateOpenBtn" class="secondary-button" type="button" data-i18n="openExisting">Open existing</button><button id="duplicateCreateBtn" class="primary-button compact" type="button"><span data-i18n="createAnyway">Create anyway</span><span>↗</span></button></div></div></dialog>
   <dialog id="importDialog" class="small-dialog"><div class="modal-card"><p class="kicker" data-i18n="importTitle">Import backup</p><h2 data-i18n="importPreview">Import preview</h2><div id="importPreview" class="import-preview"></div><p class="privacy-note" data-i18n="backupBeforeReplace"></p><div class="modal-actions"><button id="cancelImportBtn" class="text-button" type="button" data-i18n="cancel">Cancel</button><button id="mergeImportBtn" class="secondary-button" type="button" data-i18n="merge">Merge</button><button id="replaceImportBtn" class="danger-button" type="button" data-i18n="replace">Replace</button></div></div></dialog>
   <dialog id="confirmDialog" class="small-dialog"><div class="modal-card"><p class="kicker">Confirm</p><h2 id="confirmMessage"></h2><div class="modal-actions"><button id="confirmCancelBtn" class="secondary-button" type="button" data-i18n="cancel">Cancel</button><button id="confirmOkBtn" class="danger-button" type="button">Confirm</button></div></div></dialog>
+  <dialog id="privacyDialog" class="small-dialog privacy-dialog" aria-labelledby="privacyTitle"><div class="modal-card privacy-card"><div class="detail-header"><div><p class="kicker">Anostosio° / Product Lab</p><h2 id="privacyTitle">Privacy & local data</h2></div><button id="privacyCloseBtn" class="icon-button" type="button" aria-label="Close">×</button></div><div id="privacyContent" class="privacy-content"></div></div></dialog>
 
   <div id="toast" class="toast" role="status" aria-live="polite" hidden><span id="toastMessage"></span><button id="toastUndoBtn" type="button" class="text-button" hidden data-i18n="undo">Undo</button></div>
   <div id="liveRegion" class="sr-only" aria-live="polite" aria-atomic="true"></div>
 
-  <footer class="site-footer"><span data-i18n="footer">Product concept, UX/UI and front-end by Anostosio°</span><a href="https://anostosio.ru/" target="_blank" rel="noopener noreferrer" data-i18n="portfolio">Portfolio ↗</a></footer>
+  <footer class="site-footer"><span data-i18n="footer">Product concept, UX/UI and front-end by Anostosio°</span><div class="footer-links"><button id="privacyOpenBtn" class="footer-link" type="button">Privacy</button><a href="https://anostosio.ru/" target="_blank" rel="noopener noreferrer" data-i18n="portfolio">Portfolio ↗</a></div></footer>
   <script type="module" src="app.js"></script>
-  <script type="module" src="autofill.js"></script>
+  <script type="module" src="privacy.js"></script>
 </body>
 </html>

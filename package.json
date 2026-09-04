@@ -1,11 +1,16 @@
 {
-  "name":"anostosio-job-search-crm",
-  "version":"1.0.1",
-  "private":true,
-  "type":"module",
-  "scripts":{
-    "test":"node --test",
-    "check":"node --check app.js && node --check autofill.js && node --check api/parse-vacancy.js && node --check lib/vacancy-parser.js && node --test"
+  "name": "anostosio-job-search-crm",
+  "version": "1.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "node --test",
+    "check": "node --check app.js && node --check privacy.js && node --check scripts/build.mjs && node --test"
   },
-  "engines":{"node":">=20"}
+  "engines": {"node": ">=20"},
+  "dependencies": {
+    "@fontsource-variable/manrope": "5.3.0",
+    "@fontsource-variable/unbounded": "5.3.0"
+  }
 }
